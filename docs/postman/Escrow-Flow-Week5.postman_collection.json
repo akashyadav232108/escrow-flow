@@ -1,0 +1,478 @@
+{
+  "info": {
+    "name": "Escrow-Flow API (Week 5 - Escrow Core)",
+    "description": "Full escrow lifecycle: auth → project → milestones → lock funds → submit → approve/dispute",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080/api" },
+    { "key": "clientToken", "value": "" },
+    { "key": "freelancerToken", "value": "" },
+    { "key": "projectId", "value": "" },
+    { "key": "milestoneId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Auth",
+      "item": [
+        {
+          "name": "Signup Client",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 201) {",
+                "  pm.collectionVariables.set('clientToken', pm.response.json().token);",
+                "  console.log('Client token saved');",
+                "}"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alice Client\",\n  \"email\": \"alice@escrow.com\",\n  \"password\": \"password123\",\n  \"role\": \"CLIENT\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/signup"
+          }
+        },
+        {
+          "name": "Signup Freelancer",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 201) {",
+                "  pm.collectionVariables.set('freelancerToken', pm.response.json().token);",
+                "  console.log('Freelancer token saved');",
+                "}"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bob Freelancer\",\n  \"email\": \"bob@escrow.com\",\n  \"password\": \"password123\",\n  \"role\": \"FREELANCER\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/signup"
+          }
+        },
+        {
+          "name": "Get Client Wallet",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{clientToken}}" }],
+            "url": "{{baseUrl}}/wallet"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Project Setup",
+      "item": [
+        {
+          "name": "Create Project (Client)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 201) {",
+                "  const json = pm.response.json();",
+                "  pm.collectionVariables.set('projectId', json.id);",
+                "  pm.collectionVariables.set('milestoneId', json.milestones[0].id);",
+                "  console.log('Project ID:', json.id);",
+                "  console.log('Milestone ID:', json.milestones[0].id);",
+                "}"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{clientToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"E-commerce Website\",\n  \"description\": \"Build a full-stack e-commerce platform\",\n  \"milestones\": [\n    {\n      \"title\": \"Backend API\",\n      \"description\": \"REST API with authentication\",\n      \"amount\": 3000\n    },\n    {\n      \"title\": \"Frontend UI\",\n      \"description\": \"React dashboard\",\n      \"amount\": 2500\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/projects"
+          }
+        },
+        {
+          "name": "List Projects (Freelancer)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{freelancerToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/projects?status=OPEN",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects"],
+              "query": [{ "key": "status", "value": "OPEN" }]
+            }
+          }
+        },
+        {
+          "name": "Accept Project (Freelancer)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{freelancerToken}}" }],
+            "url": "{{baseUrl}}/projects/{{projectId}}/accept"
+          }
+        },
+        {
+          "name": "Get Project Detail",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{clientToken}}" }],
+            "url": "{{baseUrl}}/projects/{{projectId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Escrow Lifecycle (Happy Path)",
+      "item": [
+        {
+          "name": "Step 1: Lock Funds (Client)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "const json = pm.response.json();",
+                "pm.test('Milestone status FUNDS_LOCKED', () => {",
+                "  pm.expect(json.status).to.eql('FUNDS_LOCKED');",
+                "});",
+                "pm.test('Escrow hold created', () => {",
+                "  pm.expect(json.escrowHoldId).to.be.a('number');",
+                "});",
+                "console.log('Locked. New balance:', json.walletBalance);"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{clientToken}}" }],
+            "url": "{{baseUrl}}/milestones/{{milestoneId}}/lock-funds"
+          }
+        },
+        {
+          "name": "Check Client Wallet After Lock",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{clientToken}}" }],
+            "url": "{{baseUrl}}/wallet"
+          }
+        },
+        {
+          "name": "Step 2: Submit Work (Freelancer)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "const json = pm.response.json();",
+                "pm.test('Milestone status SUBMITTED', () => {",
+                "  pm.expect(json.status).to.eql('SUBMITTED');",
+                "});"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{freelancerToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Backend API completed. GitHub repo: https://github.com/example/backend\"\n}"
+            },
+            "url": "{{baseUrl}}/milestones/{{milestoneId}}/submit"
+          }
+        },
+        {
+          "name": "Step 3: Approve (Client)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "const json = pm.response.json();",
+                "pm.test('Milestone APPROVED', () => {",
+                "  pm.expect(json.status).to.eql('APPROVED');",
+                "});",
+                "pm.test('Escrow hold RELEASED', () => {",
+                "  pm.expect(json.escrowHoldStatus).to.eql('RELEASED');",
+                "});"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{clientToken}}" }],
+            "url": "{{baseUrl}}/milestones/{{milestoneId}}/approve"
+          }
+        },
+        {
+          "name": "Check Freelancer Wallet After Approve",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const json = pm.response.json();",
+                "console.log('Freelancer balance:', json.balance);",
+                "pm.test('Received payment', () => {",
+                "  pm.expect(parseFloat(json.balance)).to.be.above(10000);",
+                "});"
+              ]
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{freelancerToken}}" }],
+            "url": "{{baseUrl}}/wallet"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Dispute Flow (Alternative Path)",
+      "item": [
+        {
+          "name": "Setup: Lock Funds for Milestone 2",
+          "event": [{
+            "listen": "prerequest",
+            "script": {
+              "exec": [
+                "const projectId = pm.collectionVariables.get('projectId');",
+                "pm.sendRequest({",
+                "  url: pm.collectionVariables.get('baseUrl') + '/projects/' + projectId,",
+                "  method: 'GET',",
+                "  header: { 'Authorization': 'Bearer ' + pm.collectionVariables.get('clientToken') }",
+                "}, (err, res) => {",
+                "  if (!err && res.code === 200) {",
+                "    const m2 = res.json().milestones.find(m => m.title === 'Frontend UI');",
+                "    if (m2) pm.collectionVariables.set('milestone2Id', m2.id);",
+                "  }",
+                "});"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{clientToken}}" }],
+            "url": "{{baseUrl}}/milestones/{{milestone2Id}}/lock-funds"
+          }
+        },
+        {
+          "name": "Freelancer Submits Work",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{freelancerToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Frontend delivered. Demo: http://demo.example.com\"\n}"
+            },
+            "url": "{{baseUrl}}/milestones/{{milestone2Id}}/submit"
+          }
+        },
+        {
+          "name": "Client Disputes (Refund)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "const json = pm.response.json();",
+                "pm.test('Milestone REFUNDED', () => {",
+                "  pm.expect(json.status).to.eql('REFUNDED');",
+                "});",
+                "pm.test('Escrow hold REFUNDED', () => {",
+                "  pm.expect(json.escrowHoldStatus).to.eql('REFUNDED');",
+                "});"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{clientToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"UI does not match the design mockups provided\"\n}"
+            },
+            "url": "{{baseUrl}}/milestones/{{milestone2Id}}/dispute"
+          }
+        },
+        {
+          "name": "Verify Client Balance Restored",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{clientToken}}" }],
+            "url": "{{baseUrl}}/wallet"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Error Cases",
+      "item": [
+        {
+          "name": "[Error] Lock Already Locked Milestone",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status 400 Bad Request', () => {",
+                "  pm.response.to.have.status(400);",
+                "});",
+                "pm.test('Error: INVALID_MILESTONE_STATE', () => {",
+                "  pm.expect(pm.response.json().error).to.eql('INVALID_MILESTONE_STATE');",
+                "});"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{clientToken}}" }],
+            "url": "{{baseUrl}}/milestones/{{milestoneId}}/lock-funds"
+          }
+        },
+        {
+          "name": "[Error] Freelancer Tries to Lock Funds",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status 403 Forbidden', () => {",
+                "  pm.response.to.have.status(403);",
+                "});"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{freelancerToken}}" }],
+            "url": "{{baseUrl}}/milestones/{{milestoneId}}/lock-funds"
+          }
+        },
+        {
+          "name": "[Error] Client Tries to Submit Work",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status 403 Forbidden', () => {",
+                "  pm.response.to.have.status(403);",
+                "});"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{clientToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Should fail\"\n}"
+            },
+            "url": "{{baseUrl}}/milestones/{{milestoneId}}/submit"
+          }
+        },
+        {
+          "name": "[Error] Submit PENDING Milestone",
+          "event": [{
+            "listen": "prerequest",
+            "script": {
+              "exec": [
+                "pm.sendRequest({",
+                "  url: pm.collectionVariables.get('baseUrl') + '/auth/signup',",
+                "  method: 'POST',",
+                "  header: { 'Content-Type': 'application/json' },",
+                "  body: {",
+                "    mode: 'raw',",
+                "    raw: JSON.stringify({",
+                "      name: 'Test Client',",
+                "      email: 'test' + Date.now() + '@test.com',",
+                "      password: 'password123',",
+                "      role: 'BOTH'",
+                "    })",
+                "  }",
+                "}, (err, res) => {",
+                "  if (!err && res.code === 201) {",
+                "    pm.collectionVariables.set('testToken', res.json().token);",
+                "  }",
+                "});"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{freelancerToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Should fail - funds not locked\"\n}"
+            },
+            "url": "{{baseUrl}}/milestones/999/submit"
+          }
+        },
+        {
+          "name": "[Error] Approve Non-Submitted Milestone",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status 400 or 404', () => {",
+                "  pm.expect(pm.response.code).to.be.oneOf([400, 404]);",
+                "});"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{clientToken}}" }],
+            "url": "{{baseUrl}}/milestones/999/approve"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Concurrency Test (Manual)",
+      "item": [
+        {
+          "name": "Info: Run This Request 3x Simultaneously",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/wallet",
+            "description": "To test concurrency:\n1. Create a new project with 1 milestone (amount 2000)\n2. Accept the project\n3. Open Postman Runner\n4. Select 'Lock Funds' request below\n5. Set Iterations = 3, Delay = 0\n6. Run - only 1 should succeed, others fail with 409 or 400"
+          }
+        },
+        {
+          "name": "Lock Funds (For Concurrent Test)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{clientToken}}" }],
+            "url": "{{baseUrl}}/milestones/{{milestoneId}}/lock-funds"
+          }
+        }
+      ]
+    }
+  ]
+}
