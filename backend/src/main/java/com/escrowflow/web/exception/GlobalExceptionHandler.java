@@ -1,5 +1,6 @@
 package com.escrowflow.web.exception;
 
+import com.escrowflow.infrastructure.WalletLockException;
 import com.escrowflow.web.dto.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -43,6 +44,20 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of("FORBIDDEN", ex.getMessage()));
     }
 
+    @ExceptionHandler(InvalidMilestoneStateException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidMilestoneState(InvalidMilestoneStateException ex) {
+        log.warn("Invalid milestone state: {}", ex.getMessage());
+        return ResponseEntity.badRequest()
+                .body(ErrorResponse.of("INVALID_MILESTONE_STATE", ex.getMessage()));
+    }
+
+    @ExceptionHandler(InsufficientBalanceException.class)
+    public ResponseEntity<ErrorResponse> handleInsufficientBalance(InsufficientBalanceException ex) {
+        log.warn("Insufficient balance: {}", ex.getMessage());
+        return ResponseEntity.badRequest()
+                .body(ErrorResponse.of("INSUFFICIENT_BALANCE", ex.getMessage()));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
         String message = ex.getBindingResult().getFieldErrors().stream()
@@ -51,6 +66,13 @@ public class GlobalExceptionHandler {
         log.warn("Validation failed: {}", message);
         return ResponseEntity.badRequest()
                 .body(ErrorResponse.of("VALIDATION_ERROR", message));
+    }
+
+    @ExceptionHandler(WalletLockException.class)
+    public ResponseEntity<ErrorResponse> handleWalletLock(WalletLockException ex) {
+        log.warn("Wallet lock failed: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.of("WALLET_BUSY", ex.getMessage()));
     }
 
     @ExceptionHandler(IllegalStateException.class)

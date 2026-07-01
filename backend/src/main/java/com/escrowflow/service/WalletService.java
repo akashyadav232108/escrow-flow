@@ -8,6 +8,7 @@ import com.escrowflow.repository.WalletRepository;
 import com.escrowflow.repository.WalletTransactionRepository;
 import com.escrowflow.web.dto.AddFundsResponse;
 import com.escrowflow.web.dto.WalletResponse;
+import com.escrowflow.web.exception.InsufficientBalanceException;
 import com.escrowflow.web.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -64,7 +65,7 @@ public class WalletService {
         if (wallet.getBalance().compareTo(amount) < 0) {
             log.warn("Debit rejected — insufficient balance: walletId={} balance={} requested={}",
                     wallet.getId(), wallet.getBalance(), amount);
-            throw new IllegalStateException("Insufficient balance");
+            throw new InsufficientBalanceException("Insufficient balance");
         }
 
         BigDecimal newBalance = wallet.getBalance().subtract(amount);
