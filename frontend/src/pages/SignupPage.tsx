@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import BackButton from '../components/BackButton';
 import PasswordInput from '../components/PasswordInput';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { signup } from '../store/slices/authSlice';
@@ -29,6 +30,7 @@ export default function SignupPage() {
 
   return (
     <div className="auth-page">
+      <BackButton className="auth-back-button" />
       <div className="auth-brand">
         <span className="auth-brand-mark">E</span>
         Escrow Flow

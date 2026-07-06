@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import BackButton from './BackButton';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { logout } from '../store/slices/authSlice';
 
@@ -74,6 +75,7 @@ export default function Layout() {
       </aside>
       <div className="app-main">
         <main className="app-content">
+          <BackButton />
           <Outlet />
         </main>
       </div>
