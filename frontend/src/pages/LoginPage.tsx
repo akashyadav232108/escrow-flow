@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import PasswordInput from '../components/PasswordInput';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { login } from '../store/slices/authSlice';
 import { extractApiErrorMessage } from '../utils/errors';
@@ -48,11 +49,11 @@ export default function LoginPage() {
           </label>
           <label>
             Password
-            <input
-              type="password"
+            <PasswordInput
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={setPassword}
               placeholder="••••••••"
+              autoComplete="current-password"
               required
             />
           </label>

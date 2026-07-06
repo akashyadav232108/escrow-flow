@@ -10,6 +10,7 @@ import {
 } from '../store/slices/projectsSlice';
 import { fetchWallet } from '../store/slices/walletSlice';
 import { createIdempotencyKey } from '../utils/idempotency';
+import { extractApiErrorMessage } from '../utils/errors';
 
 interface MilestoneActionsProps {
   milestone: Milestone;
@@ -28,6 +29,10 @@ export default function MilestoneActions({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null);
+  const [showSubmitForm, setShowSubmitForm] = useState(false);
+  const [showDisputeForm, setShowDisputeForm] = useState(false);
+  const [note, setNote] = useState('');
+  const [disputeReason, setDisputeReason] = useState('');
 
   const refresh = async () => {
     await Promise.all([dispatch(fetchProjectById(projectId)), dispatch(fetchWallet())]);
@@ -43,22 +48,26 @@ export default function MilestoneActions({
       setIdempotencyKey(null);
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to lock funds');
+      setError(extractApiErrorMessage(err, 'Failed to lock funds'));
     } finally {
       setBusy(false);
     }
   };
 
-  const handleSubmit = async () => {
-    const note = window.prompt('Describe the delivered work:');
-    if (note === null) return;
+  const handleSubmitWork = async () => {
+    if (!note.trim()) {
+      setError('Describe the work you delivered before submitting.');
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
-      await dispatch(submitMilestone({ milestoneId: milestone.id, note })).unwrap();
+      await dispatch(submitMilestone({ milestoneId: milestone.id, note: note.trim() })).unwrap();
+      setNote('');
+      setShowSubmitForm(false);
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit work');
+      setError(extractApiErrorMessage(err, 'Failed to submit work'));
     } finally {
       setBusy(false);
     }
@@ -71,21 +80,24 @@ export default function MilestoneActions({
       await dispatch(approveMilestone(milestone.id)).unwrap();
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to approve milestone');
+      setError(extractApiErrorMessage(err, 'Failed to approve milestone'));
     } finally {
       setBusy(false);
     }
   };
 
   const handleDispute = async () => {
-    const reason = window.prompt('Reason for dispute (optional):') ?? undefined;
     setBusy(true);
     setError(null);
     try {
-      await dispatch(disputeMilestone({ milestoneId: milestone.id, reason })).unwrap();
+      await dispatch(
+        disputeMilestone({ milestoneId: milestone.id, reason: disputeReason.trim() || undefined }),
+      ).unwrap();
+      setDisputeReason('');
+      setShowDisputeForm(false);
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to dispute milestone');
+      setError(extractApiErrorMessage(err, 'Failed to dispute milestone'));
     } finally {
       setBusy(false);
     }
@@ -98,21 +110,82 @@ export default function MilestoneActions({
           Lock funds
         </button>
       )}
-      {isFreelancer && milestone.status === 'FUNDS_LOCKED' && (
-        <button type="button" disabled={busy} onClick={handleSubmit}>
+
+      {isFreelancer && milestone.status === 'FUNDS_LOCKED' && !showSubmitForm && (
+        <button type="button" disabled={busy} onClick={() => setShowSubmitForm(true)}>
           Submit work
         </button>
       )}
-      {isClient && milestone.status === 'SUBMITTED' && (
+
+      {isFreelancer && showSubmitForm && (
+        <div className="inline-action-form">
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Describe the delivered work, links, etc."
+            rows={2}
+            autoFocus
+          />
+          <div className="inline-action-buttons">
+            <button type="button" disabled={busy} onClick={handleSubmitWork}>
+              {busy ? 'Submitting…' : 'Confirm submit'}
+            </button>
+            <button
+              type="button"
+              className="btn-ghost"
+              disabled={busy}
+              onClick={() => {
+                setShowSubmitForm(false);
+                setNote('');
+                setError(null);
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isClient && milestone.status === 'SUBMITTED' && !showDisputeForm && (
         <>
           <button type="button" disabled={busy} onClick={handleApprove}>
-            Approve
+            {busy ? 'Approving…' : 'Approve'}
           </button>
-          <button type="button" disabled={busy} onClick={handleDispute}>
+          <button type="button" className="btn-danger-outline" disabled={busy} onClick={() => setShowDisputeForm(true)}>
             Dispute
           </button>
         </>
       )}
+
+      {isClient && showDisputeForm && (
+        <div className="inline-action-form">
+          <textarea
+            value={disputeReason}
+            onChange={(e) => setDisputeReason(e.target.value)}
+            placeholder="Reason for dispute (optional)"
+            rows={2}
+            autoFocus
+          />
+          <div className="inline-action-buttons">
+            <button type="button" className="btn-danger-outline" disabled={busy} onClick={handleDispute}>
+              {busy ? 'Submitting…' : 'Confirm dispute'}
+            </button>
+            <button
+              type="button"
+              className="btn-ghost"
+              disabled={busy}
+              onClick={() => {
+                setShowDisputeForm(false);
+                setDisputeReason('');
+                setError(null);
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {error && <p className="error-text">{error}</p>}
     </div>
   );
