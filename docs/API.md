@@ -66,6 +66,30 @@ Create user and wallet with starting balance.
 
 ---
 
+### POST `/auth/change-password`
+
+Authenticated user changes their own password.
+
+**Request**
+
+```json
+{
+  "currentPassword": "securePassword123",
+  "newPassword": "evenMoreSecure456"
+}
+```
+
+**Response** `204` — no body.
+
+**Errors**
+
+| Status | When |
+|--------|------|
+| 401 | `currentPassword` does not match |
+| 400 | `newPassword` shorter than 8 characters |
+
+---
+
 ## Wallet
 
 ### GET `/wallet`
@@ -294,6 +318,7 @@ Common error codes:
 | `INSUFFICIENT_BALANCE` | 400 |
 | `WALLET_BUSY` | 409 |
 | `IDEMPOTENCY_KEY_CONFLICT` | 409 |
+| `INVALID_CURRENT_PASSWORD` | 401 |
 | `CONCURRENT_MODIFICATION` | 409 |
 | `INVALID_REQUEST` | 400 |
 | `UNAUTHORIZED` | 401 |
@@ -308,14 +333,15 @@ Common error codes:
 |---|--------|------|------|
 | 1 | POST | `/auth/signup` | Public |
 | 2 | POST | `/auth/login` | Public |
-| 3 | GET | `/wallet` | Auth |
-| 4 | POST | `/wallet/add-funds` | Auth |
-| 5 | GET | `/wallet/transactions` | Auth |
-| 6 | POST | `/projects` | Client |
-| 7 | GET | `/projects` | Auth |
-| 8 | GET | `/projects/{id}` | Auth |
-| 9 | POST | `/projects/{id}/accept` | Freelancer |
-| 10 | POST | `/milestones/{id}/lock-funds` | Client |
-| 11 | POST | `/milestones/{id}/submit` | Freelancer |
-| 12 | POST | `/milestones/{id}/approve` | Client |
-| 13 | POST | `/milestones/{id}/dispute` | Client |
+| 3 | POST | `/auth/change-password` | Auth |
+| 4 | GET | `/wallet` | Auth |
+| 5 | POST | `/wallet/add-funds` | Auth |
+| 6 | GET | `/wallet/transactions` | Auth |
+| 7 | POST | `/projects` | Client |
+| 8 | GET | `/projects` | Auth |
+| 9 | GET | `/projects/{id}` | Auth |
+| 10 | POST | `/projects/{id}/accept` | Freelancer |
+| 11 | POST | `/milestones/{id}/lock-funds` | Client |
+| 12 | POST | `/milestones/{id}/submit` | Freelancer |
+| 13 | POST | `/milestones/{id}/approve` | Client |
+| 14 | POST | `/milestones/{id}/dispute` | Client |

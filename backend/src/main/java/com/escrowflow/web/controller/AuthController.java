@@ -1,7 +1,9 @@
 package com.escrowflow.web.controller;
 
+import com.escrowflow.security.SecurityUtils;
 import com.escrowflow.service.AuthService;
 import com.escrowflow.web.dto.AuthResponse;
+import com.escrowflow.web.dto.ChangePasswordRequest;
 import com.escrowflow.web.dto.LoginRequest;
 import com.escrowflow.web.dto.SignupRequest;
 import jakarta.validation.Valid;
@@ -31,5 +33,11 @@ public class AuthController {
     @PostMapping("/login")
     public AuthResponse login(@Valid @RequestBody LoginRequest request) {
         return authService.login(request);
+    }
+
+    @PostMapping("/change-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        authService.changePassword(SecurityUtils.getCurrentUserId(), request);
     }
 }
