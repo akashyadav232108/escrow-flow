@@ -7,6 +7,7 @@ import com.escrowflow.domain.Wallet;
 import com.escrowflow.domain.enums.EscrowHoldStatus;
 import com.escrowflow.domain.enums.MilestoneStatus;
 import com.escrowflow.domain.enums.ReferenceType;
+import com.escrowflow.infrastructure.DisputeRateLimitService;
 import com.escrowflow.infrastructure.RedisWalletLockService;
 import com.escrowflow.repository.EscrowHoldRepository;
 import com.escrowflow.repository.MilestoneRepository;
@@ -27,16 +28,19 @@ public class EscrowService {
     private final EscrowHoldRepository escrowHoldRepository;
     private final WalletService walletService;
     private final RedisWalletLockService lockService;
+    private final DisputeRateLimitService disputeRateLimitService;
 
     public EscrowService(
             MilestoneRepository milestoneRepository,
             EscrowHoldRepository escrowHoldRepository,
             WalletService walletService,
-            RedisWalletLockService lockService) {
+            RedisWalletLockService lockService,
+            DisputeRateLimitService disputeRateLimitService) {
         this.milestoneRepository = milestoneRepository;
         this.escrowHoldRepository = escrowHoldRepository;
         this.walletService = walletService;
         this.lockService = lockService;
+        this.disputeRateLimitService = disputeRateLimitService;
     }
 
     public void lockFunds(Long milestoneId, Long clientUserId) {
@@ -128,6 +132,8 @@ public class EscrowService {
 
     @Transactional
     public void dispute(Long milestoneId, Long clientUserId, String reason) {
+        disputeRateLimitService.checkAndIncrement(clientUserId);
+
         Milestone milestone = milestoneRepository.findByIdWithProject(milestoneId)
                 .orElseThrow(() -> new ResourceNotFoundException("Milestone not found"));
 
