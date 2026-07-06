@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { authApi, type LoginPayload, type SignupPayload } from '../../api/authApi';
 import type { User } from '../../types';
+import { extractApiErrorMessage } from '../../utils/errors';
 
 interface AuthState {
   user: User | null;
@@ -21,12 +22,26 @@ const initialState: AuthState = {
   error: null,
 };
 
-export const signup = createAsyncThunk('auth/signup', async (payload: SignupPayload) =>
-  authApi.signup(payload),
+export const signup = createAsyncThunk(
+  'auth/signup',
+  async (payload: SignupPayload, { rejectWithValue }) => {
+    try {
+      return await authApi.signup(payload);
+    } catch (err) {
+      return rejectWithValue(extractApiErrorMessage(err, 'Signup failed'));
+    }
+  },
 );
 
-export const login = createAsyncThunk('auth/login', async (payload: LoginPayload) =>
-  authApi.login(payload),
+export const login = createAsyncThunk(
+  'auth/login',
+  async (payload: LoginPayload, { rejectWithValue }) => {
+    try {
+      return await authApi.login(payload);
+    } catch (err) {
+      return rejectWithValue(extractApiErrorMessage(err, 'Login failed'));
+    }
+  },
 );
 
 const authSlice = createSlice({
@@ -57,7 +72,7 @@ const authSlice = createSlice({
       })
       .addCase(signup.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message ?? 'Signup failed';
+        state.error = (action.payload as string) ?? action.error.message ?? 'Signup failed';
       })
       .addCase(login.pending, (state) => {
         state.loading = true;
@@ -73,7 +88,7 @@ const authSlice = createSlice({
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message ?? 'Login failed';
+        state.error = (action.payload as string) ?? action.error.message ?? 'Login failed';
       });
   },
 });

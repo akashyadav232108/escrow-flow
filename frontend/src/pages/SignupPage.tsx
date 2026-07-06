@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { signup } from '../store/slices/authSlice';
 import type { Role } from '../types';
+import { extractApiErrorMessage } from '../utils/errors';
 
 export default function SignupPage() {
   const dispatch = useAppDispatch();
@@ -21,7 +22,7 @@ export default function SignupPage() {
       await dispatch(signup({ name, email, password, role })).unwrap();
       navigate('/', { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Signup failed');
+      setError(extractApiErrorMessage(err, 'Signup failed'));
     }
   };
 

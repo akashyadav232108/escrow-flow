@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { login } from '../store/slices/authSlice';
+import { extractApiErrorMessage } from '../utils/errors';
 
 export default function LoginPage() {
   const dispatch = useAppDispatch();
@@ -21,7 +22,7 @@ export default function LoginPage() {
       await dispatch(login({ email, password })).unwrap();
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(extractApiErrorMessage(err, 'Login failed'));
     }
   };
 
