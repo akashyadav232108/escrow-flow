@@ -1,5 +1,10 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { authApi, type LoginPayload, type SignupPayload } from '../../api/authApi';
+import {
+  authApi,
+  type ChangePasswordPayload,
+  type LoginPayload,
+  type SignupPayload,
+} from '../../api/authApi';
 import type { User } from '../../types';
 import { extractApiErrorMessage } from '../../utils/errors';
 
@@ -40,6 +45,17 @@ export const login = createAsyncThunk(
       return await authApi.login(payload);
     } catch (err) {
       return rejectWithValue(extractApiErrorMessage(err, 'Login failed'));
+    }
+  },
+);
+
+export const changePassword = createAsyncThunk(
+  'auth/changePassword',
+  async (payload: ChangePasswordPayload, { rejectWithValue }) => {
+    try {
+      await authApi.changePassword(payload);
+    } catch (err) {
+      return rejectWithValue(extractApiErrorMessage(err, 'Failed to change password'));
     }
   },
 );

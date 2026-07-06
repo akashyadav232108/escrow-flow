@@ -3,6 +3,7 @@ import Layout from './components/Layout';
 import RequireAuth from './components/RequireAuth';
 import DashboardPage from './pages/DashboardPage';
 import LoginPage from './pages/LoginPage';
+import ProfilePage from './pages/ProfilePage';
 import ProjectDetailPage from './pages/ProjectDetailPage';
 import SignupPage from './pages/SignupPage';
 import WalletPage from './pages/WalletPage';
@@ -23,6 +24,7 @@ function App() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/projects/:id" element={<ProjectDetailPage />} />
         <Route path="/wallet" element={<WalletPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

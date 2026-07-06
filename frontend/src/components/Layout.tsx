@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { logout } from '../store/slices/authSlice';
 
@@ -34,13 +34,13 @@ export default function Layout() {
         </nav>
         <div className="sidebar-footer">
           {user && (
-            <div className="sidebar-user">
+            <Link to="/profile" className="sidebar-user">
               <span className="sidebar-user-avatar">{initial}</span>
               <div>
                 <div className="sidebar-user-name">{user.name}</div>
                 <div className="sidebar-user-role">{user.role.toLowerCase()}</div>
               </div>
-            </div>
+            </Link>
           )}
           <button type="button" className="sidebar-logout" onClick={handleLogout}>
             Logout
