@@ -15,6 +15,7 @@ export default function Layout() {
   return (
     <div className="app-shell">
       <header className="app-header">
+        <span className="app-brand">Escrow Flow</span>
         <nav className="app-nav">
           <Link to="/">Dashboard</Link>
           <Link to="/wallet">Wallet</Link>
