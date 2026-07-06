@@ -7,15 +7,21 @@ import com.escrowflow.domain.enums.TransactionType;
 import com.escrowflow.repository.WalletRepository;
 import com.escrowflow.repository.WalletTransactionRepository;
 import com.escrowflow.web.dto.AddFundsResponse;
+import com.escrowflow.web.dto.TransactionHistoryResponse;
+import com.escrowflow.web.dto.TransactionResponse;
 import com.escrowflow.web.dto.WalletResponse;
 import com.escrowflow.web.exception.InsufficientBalanceException;
 import com.escrowflow.web.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -83,6 +89,26 @@ public class WalletService {
                 .build());
     }
 
+    @Transactional(readOnly = true)
+    public TransactionHistoryResponse getTransactions(Long userId, int page, int size) {
+        Wallet wallet = findWalletByUserId(userId);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<WalletTransaction> transactionPage = walletTransactionRepository
+                .findByWalletIdOrderByCreatedAtDesc(wallet.getId(), pageable);
+
+        List<TransactionResponse> content = transactionPage.getContent().stream()
+                .map(this::toTransactionResponse)
+                .toList();
+
+        return new TransactionHistoryResponse(
+                content,
+                transactionPage.getNumber(),
+                transactionPage.getSize(),
+                transactionPage.getTotalElements(),
+                transactionPage.getTotalPages()
+        );
+    }
+
     public Wallet findWalletByUserId(Long userId) {
         return walletRepository.findByUser_Id(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Wallet not found for user"));
@@ -90,5 +116,17 @@ public class WalletService {
 
     private WalletResponse toResponse(Wallet wallet) {
         return new WalletResponse(wallet.getId(), wallet.getBalance(), wallet.getUpdatedAt());
+    }
+
+    private TransactionResponse toTransactionResponse(WalletTransaction transaction) {
+        return new TransactionResponse(
+                transaction.getId(),
+                transaction.getType(),
+                transaction.getAmount(),
+                transaction.getReferenceType(),
+                transaction.getReferenceId(),
+                transaction.getBalanceAfter(),
+                transaction.getCreatedAt()
+        );
     }
 }

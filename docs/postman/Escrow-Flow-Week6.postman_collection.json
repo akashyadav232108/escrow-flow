@@ -1,0 +1,397 @@
+{
+  "info": {
+    "name": "Escrow-Flow API (Week 6 - Idempotency + Audit)",
+    "description": "Week 6 hardening: idempotent lock-funds (Idempotency-Key), paginated transaction history, error-code standardization. Run folders top-to-bottom.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080/api" },
+    { "key": "clientToken", "value": "" },
+    { "key": "freelancerToken", "value": "" },
+    { "key": "clientEmail", "value": "" },
+    { "key": "freelancerEmail", "value": "" },
+    { "key": "projectId", "value": "" },
+    { "key": "milestoneId", "value": "" },
+    { "key": "milestone2Id", "value": "" },
+    { "key": "idempotencyKey", "value": "" },
+    { "key": "firstHoldId", "value": "" },
+    { "key": "balanceAfterLock", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Setup (Auth + Project)",
+      "item": [
+        {
+          "name": "Signup Client",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('clientEmail', 'w6-client-' + Date.now() + '@escrow.com');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('clientToken', pm.response.json().token);",
+                  "  console.log('Client token saved');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alice Client\",\n  \"email\": \"{{clientEmail}}\",\n  \"password\": \"password123\",\n  \"role\": \"CLIENT\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/signup"
+          }
+        },
+        {
+          "name": "Signup Freelancer",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('freelancerEmail', 'w6-freelancer-' + Date.now() + '@escrow.com');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('freelancerToken', pm.response.json().token);",
+                  "  console.log('Freelancer token saved');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bob Freelancer\",\n  \"email\": \"{{freelancerEmail}}\",\n  \"password\": \"password123\",\n  \"role\": \"FREELANCER\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/signup"
+          }
+        },
+        {
+          "name": "Create Project (Client)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('projectId', json.id);",
+                  "  pm.collectionVariables.set('milestoneId', json.milestones[0].id);",
+                  "  pm.collectionVariables.set('milestone2Id', json.milestones[1].id);",
+                  "  console.log('Project ID:', json.id);",
+                  "  console.log('Milestone 1 ID:', json.milestones[0].id);",
+                  "  console.log('Milestone 2 ID:', json.milestones[1].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{clientToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Idempotency Demo Project\",\n  \"description\": \"Week 6 hardening walkthrough\",\n  \"milestones\": [\n    {\n      \"title\": \"Milestone A\",\n      \"description\": \"Locked with idempotency key\",\n      \"amount\": 3000\n    },\n    {\n      \"title\": \"Milestone B\",\n      \"description\": \"Used for missing-header error case\",\n      \"amount\": 2500\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/projects"
+          }
+        },
+        {
+          "name": "Accept Project (Freelancer)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{freelancerToken}}" }],
+            "url": "{{baseUrl}}/projects/{{projectId}}/accept"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Idempotency (Week 6)",
+      "item": [
+        {
+          "name": "Lock Funds - First Call (with Idempotency-Key)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('idempotencyKey', pm.variables.replaceIn('{{$guid}}'));",
+                  "console.log('Idempotency-Key:', pm.collectionVariables.get('idempotencyKey'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Milestone FUNDS_LOCKED', () => pm.expect(json.status).to.eql('FUNDS_LOCKED'));",
+                  "pm.test('Escrow hold created', () => pm.expect(json.escrowHoldId).to.be.a('number'));",
+                  "pm.collectionVariables.set('firstHoldId', json.escrowHoldId);",
+                  "pm.collectionVariables.set('balanceAfterLock', json.walletBalance);",
+                  "console.log('Hold ID:', json.escrowHoldId, '| Balance after lock:', json.walletBalance);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clientToken}}" },
+              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" }
+            ],
+            "url": "{{baseUrl}}/milestones/{{milestoneId}}/lock-funds"
+          }
+        },
+        {
+          "name": "Lock Funds - Duplicate Call (same key -> cached, no second debit)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 (idempotent replay)', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Same escrow hold returned (cached)', () => {",
+                  "  pm.expect(Number(json.escrowHoldId)).to.eql(Number(pm.collectionVariables.get('firstHoldId')));",
+                  "});",
+                  "pm.test('Balance unchanged (no double debit)', () => {",
+                  "  pm.expect(parseFloat(json.walletBalance)).to.eql(parseFloat(pm.collectionVariables.get('balanceAfterLock')));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clientToken}}" },
+              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" }
+            ],
+            "url": "{{baseUrl}}/milestones/{{milestoneId}}/lock-funds"
+          }
+        },
+        {
+          "name": "Verify Wallet Balance (unchanged after replay)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Balance equals post-lock balance (single debit only)', () => {",
+                  "  pm.expect(parseFloat(json.balance)).to.eql(parseFloat(pm.collectionVariables.get('balanceAfterLock')));",
+                  "});",
+                  "console.log('Current client balance:', json.balance);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{clientToken}}" }],
+            "url": "{{baseUrl}}/wallet"
+          }
+        },
+        {
+          "name": "[Error] Lock Funds - Missing Idempotency-Key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                  "pm.test('Error code stable (INVALID_REQUEST)', () => {",
+                  "  pm.expect(pm.response.json().error).to.eql('INVALID_REQUEST');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{clientToken}}" }],
+            "url": "{{baseUrl}}/milestones/{{milestone2Id}}/lock-funds"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Transaction History (Week 6)",
+      "item": [
+        {
+          "name": "Get Transactions - Default Pagination",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Has content array', () => pm.expect(json.content).to.be.an('array'));",
+                  "pm.test('Page defaults to 0', () => pm.expect(json.page).to.eql(0));",
+                  "pm.test('Size defaults to 20', () => pm.expect(json.size).to.eql(20));",
+                  "pm.test('totalElements present', () => pm.expect(json.totalElements).to.be.a('number'));",
+                  "pm.test('Newest first (has ESCROW_LOCK or ADD_FUNDS)', () => {",
+                  "  pm.expect(json.content.length).to.be.above(0);",
+                  "});",
+                  "console.log('Total transactions:', json.totalElements);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{clientToken}}" }],
+            "url": "{{baseUrl}}/wallet/transactions"
+          }
+        },
+        {
+          "name": "Get Transactions - Custom Page Size",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Size param respected (5)', () => pm.expect(json.size).to.eql(5));",
+                  "pm.test('Page param respected (0)', () => pm.expect(json.page).to.eql(0));",
+                  "pm.test('Content not larger than size', () => pm.expect(json.content.length).to.be.at.most(5));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{clientToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/wallet/transactions?page=0&size=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["wallet", "transactions"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "5" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Transactions - Freelancer (empty or credits only)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Has content array', () => pm.expect(json.content).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{freelancerToken}}" }],
+            "url": "{{baseUrl}}/wallet/transactions"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Error Code Standardization",
+      "item": [
+        {
+          "name": "[Error] Unauthenticated Transaction History",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 Unauthorized', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/wallet/transactions"
+          }
+        },
+        {
+          "name": "[Error] Lock Already-Locked Milestone (idempotency key differs)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('idempotencyKey', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                  "pm.test('Error INVALID_MILESTONE_STATE', () => {",
+                  "  pm.expect(pm.response.json().error).to.eql('INVALID_MILESTONE_STATE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clientToken}}" },
+              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" }
+            ],
+            "url": "{{baseUrl}}/milestones/{{milestoneId}}/lock-funds"
+          }
+        }
+      ]
+    }
+  ]
+}
