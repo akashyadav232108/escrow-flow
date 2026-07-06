@@ -1,0 +1,22 @@
+import api from './client';
+import type { AuthResponse, Role } from '../types';
+
+export interface SignupPayload {
+  name: string;
+  email: string;
+  password: string;
+  role: Role;
+}
+
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+export const authApi = {
+  signup: (payload: SignupPayload) =>
+    api.post<AuthResponse>('/auth/signup', payload).then((res) => res.data),
+
+  login: (payload: LoginPayload) =>
+    api.post<AuthResponse>('/auth/login', payload).then((res) => res.data),
+};

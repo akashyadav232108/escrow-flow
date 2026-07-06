@@ -38,3 +38,8 @@ frontend/.env.local
 # Secrets
 .env
 *.pem
+
+# IDE
+.idea/
+*.iws
+*.ipr

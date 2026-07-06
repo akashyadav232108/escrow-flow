@@ -1,0 +1,201 @@
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e2e2e2;
+}
+
+.app-nav {
+  display: flex;
+  gap: 1.25rem;
+}
+
+.app-nav a {
+  text-decoration: none;
+  color: inherit;
+  font-weight: 500;
+}
+
+.app-header-user {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.app-content {
+  flex: 1;
+  padding: 1.5rem;
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.auth-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 360px;
+  padding: 2rem;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+}
+
+.auth-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.error-text {
+  color: #d64545;
+  font-size: 0.9rem;
+}
+
+.dashboard-header {
+  margin-bottom: 1rem;
+}
+
+.project-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.project-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.status-pending,
+.status-open {
+  background: #eee;
+  color: #555;
+}
+
+.status-funds-locked,
+.status-in_progress {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-submitted {
+  background: #fef9c3;
+  color: #a16207;
+}
+
+.status-approved,
+.status-completed {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.status-disputed,
+.status-refunded,
+.status-cancelled {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.project-meta {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.milestone-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.milestone-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+}
+
+.milestone-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.milestone-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.wallet-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.wallet-summary-label {
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.wallet-summary-balance {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.add-funds-form {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.transaction-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.transaction-table th,
+.transaction-table td {
+  text-align: left;
+  padding: 0.5rem;
+  border-bottom: 1px solid #e2e2e2;
+  font-size: 0.9rem;
+}
