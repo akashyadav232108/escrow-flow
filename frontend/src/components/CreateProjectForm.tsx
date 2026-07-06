@@ -121,7 +121,7 @@ export default function CreateProjectForm({ onCreated }: { onCreated: () => void
       </div>
 
       {error && <p className="error-text">{error}</p>}
-      <button type="submit" disabled={loading}>
+      <button type="submit" className="btn-primary" disabled={loading}>
         {loading ? 'Creating…' : 'Create project'}
       </button>
     </form>

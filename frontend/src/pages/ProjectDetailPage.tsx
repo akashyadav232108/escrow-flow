@@ -52,7 +52,7 @@ export default function ProjectDetailPage() {
           </span>
         </div>
         {canAccept && (
-          <button type="button" disabled={accepting} onClick={handleAccept}>
+          <button type="button" className="btn-primary" disabled={accepting} onClick={handleAccept}>
             {accepting ? 'Accepting…' : 'Accept project'}
           </button>
         )}

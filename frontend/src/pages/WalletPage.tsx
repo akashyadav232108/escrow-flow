@@ -28,8 +28,12 @@ export default function WalletPage() {
   return (
     <div className="wallet-page">
       <WalletSummary balance={balance} />
-      <button type="button" onClick={() => setShowAddFunds((prev) => !prev)}>
-        Add funds
+      <button
+        type="button"
+        className={showAddFunds ? 'btn-secondary' : 'btn-primary'}
+        onClick={() => setShowAddFunds((prev) => !prev)}
+      >
+        {showAddFunds ? 'Cancel' : 'Add funds'}
       </button>
       {showAddFunds && (
         <form className="add-funds-form" onSubmit={handleAddFunds}>
@@ -42,7 +46,7 @@ export default function WalletPage() {
             onChange={(e) => setAmount(e.target.value)}
             required
           />
-          <button type="submit" disabled={loading}>
+          <button type="submit" className="btn-primary" disabled={loading}>
             Confirm
           </button>
         </form>

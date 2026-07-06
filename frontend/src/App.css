@@ -127,25 +127,98 @@
 
 /* Buttons */
 .btn-primary,
-button[type='submit'] {
-  background: var(--color-primary);
-  color: #fff;
-  border: none;
+.btn-secondary,
+.btn-soft,
+.btn-success,
+.btn-danger-outline,
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
   padding: 0.65rem 1.25rem;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  transition: background 0.15s ease, transform 0.1s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  white-space: nowrap;
 }
 
-.btn-primary:hover,
-button[type='submit']:hover:not(:disabled) {
+.btn-primary:active:not(:disabled),
+.btn-secondary:active:not(:disabled),
+.btn-soft:active:not(:disabled),
+.btn-success:active:not(:disabled),
+.btn-danger-outline:active:not(:disabled),
+.btn-ghost:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
   background: var(--color-primary-hover);
 }
 
-.btn-primary:active,
-button[type='submit']:active:not(:disabled) {
-  transform: scale(0.98);
+.btn-secondary {
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.btn-soft {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-soft-text);
+}
+
+.btn-soft:hover:not(:disabled) {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.btn-success {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.btn-success:hover:not(:disabled) {
+  background: var(--color-success);
+  color: #fff;
+}
+
+.btn-danger-outline {
+  background: none;
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.btn-danger-outline:hover:not(:disabled) {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.btn-ghost {
+  background: none;
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--color-surface-alt);
+  color: var(--color-text);
+}
+
+.btn-sm {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.85rem;
 }
 
 /* Auth pages */
@@ -247,7 +320,7 @@ button[type='submit']:active:not(:disabled) {
   background: var(--color-surface-alt);
 }
 
-.auth-form button[type='submit'] {
+.auth-form .btn-primary {
   margin-top: 0.25rem;
   width: 100%;
 }
@@ -474,7 +547,7 @@ button[type='submit']:active:not(:disabled) {
   background: var(--color-primary-soft);
 }
 
-.create-project-form > button[type='submit'] {
+.create-project-form > .btn-primary {
   align-self: flex-start;
 }
 
@@ -517,45 +590,6 @@ button[type='submit']:active:not(:disabled) {
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
-}
-
-.milestone-actions button {
-  background: var(--color-primary-soft);
-  color: var(--color-primary-soft-text);
-  border: none;
-  border-radius: var(--radius-sm);
-  padding: 0.45rem 0.9rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: background 0.15s ease;
-  white-space: nowrap;
-}
-
-.milestone-actions button:hover:not(:disabled) {
-  background: var(--color-primary);
-  color: #fff;
-}
-
-.milestone-actions button.btn-ghost {
-  background: none;
-  border: 1px solid var(--color-border);
-  color: var(--color-text-muted);
-}
-
-.milestone-actions button.btn-ghost:hover:not(:disabled) {
-  background: var(--color-surface-alt);
-  color: var(--color-text);
-}
-
-.milestone-actions button.btn-danger-outline {
-  background: none;
-  border: 1px solid var(--color-danger);
-  color: var(--color-danger);
-}
-
-.milestone-actions button.btn-danger-outline:hover:not(:disabled) {
-  background: var(--color-danger);
-  color: #fff;
 }
 
 .inline-action-form {

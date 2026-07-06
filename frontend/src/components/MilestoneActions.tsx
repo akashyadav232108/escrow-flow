@@ -106,13 +106,18 @@ export default function MilestoneActions({
   return (
     <div className="milestone-actions">
       {isClient && milestone.status === 'PENDING' && (
-        <button type="button" disabled={busy} onClick={handleLockFunds}>
+        <button type="button" className="btn-soft btn-sm" disabled={busy} onClick={handleLockFunds}>
           Lock funds
         </button>
       )}
 
       {isFreelancer && milestone.status === 'FUNDS_LOCKED' && !showSubmitForm && (
-        <button type="button" disabled={busy} onClick={() => setShowSubmitForm(true)}>
+        <button
+          type="button"
+          className="btn-soft btn-sm"
+          disabled={busy}
+          onClick={() => setShowSubmitForm(true)}
+        >
           Submit work
         </button>
       )}
@@ -127,7 +132,7 @@ export default function MilestoneActions({
             autoFocus
           />
           <div className="inline-action-buttons">
-            <button type="button" disabled={busy} onClick={handleSubmitWork}>
+            <button type="button" className="btn-primary" disabled={busy} onClick={handleSubmitWork}>
               {busy ? 'Submitting…' : 'Confirm submit'}
             </button>
             <button
@@ -148,10 +153,15 @@ export default function MilestoneActions({
 
       {isClient && milestone.status === 'SUBMITTED' && !showDisputeForm && (
         <>
-          <button type="button" disabled={busy} onClick={handleApprove}>
+          <button type="button" className="btn-success btn-sm" disabled={busy} onClick={handleApprove}>
             {busy ? 'Approving…' : 'Approve'}
           </button>
-          <button type="button" className="btn-danger-outline" disabled={busy} onClick={() => setShowDisputeForm(true)}>
+          <button
+            type="button"
+            className="btn-danger-outline btn-sm"
+            disabled={busy}
+            onClick={() => setShowDisputeForm(true)}
+          >
             Dispute
           </button>
         </>

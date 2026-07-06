@@ -35,7 +35,11 @@ export default function DashboardPage() {
           </p>
         </div>
         {isClient && (
-          <button type="button" onClick={() => setShowCreateForm((prev) => !prev)}>
+          <button
+            type="button"
+            className={showCreateForm ? 'btn-secondary' : 'btn-primary'}
+            onClick={() => setShowCreateForm((prev) => !prev)}
+          >
             {showCreateForm ? 'Cancel' : '+ New project'}
           </button>
         )}
