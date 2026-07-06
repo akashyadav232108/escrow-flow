@@ -6,29 +6,31 @@ export default function TransactionHistory({ transactions }: { transactions: Tra
   }
 
   return (
-    <table className="transaction-table">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Type</th>
-          <th>Amount</th>
-          <th>Reference</th>
-          <th>Balance after</th>
-        </tr>
-      </thead>
-      <tbody>
-        {transactions.map((tx) => (
-          <tr key={tx.id}>
-            <td>{new Date(tx.createdAt).toLocaleString()}</td>
-            <td>{tx.type}</td>
-            <td>₹{tx.amount}</td>
-            <td>
-              {tx.referenceType} #{tx.referenceId}
-            </td>
-            <td>₹{tx.balanceAfter}</td>
+    <div className="table-scroll">
+      <table className="transaction-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Reference</th>
+            <th>Balance after</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {transactions.map((tx) => (
+            <tr key={tx.id}>
+              <td>{new Date(tx.createdAt).toLocaleString()}</td>
+              <td>{tx.type}</td>
+              <td>₹{tx.amount}</td>
+              <td>
+                {tx.referenceType} #{tx.referenceId}
+              </td>
+              <td>₹{tx.balanceAfter}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

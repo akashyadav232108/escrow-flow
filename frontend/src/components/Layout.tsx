@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { logout } from '../store/slices/authSlice';
@@ -9,8 +10,12 @@ export default function Layout() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const user = useAppSelector((state) => state.auth.user);
+  const [navOpen, setNavOpen] = useState(false);
+
+  const closeNav = () => setNavOpen(false);
 
   const handleLogout = () => {
+    closeNav();
     dispatch(logout());
     navigate('/login');
   };
@@ -19,22 +24,42 @@ export default function Layout() {
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
+      <header className="mobile-topbar">
+        <div className="sidebar-brand">
+          <span className="auth-brand-mark">E</span>
+          Escrow Flow
+        </div>
+        <button
+          type="button"
+          className="hamburger-btn"
+          aria-label={navOpen ? 'Close navigation' : 'Open navigation'}
+          aria-expanded={navOpen}
+          onClick={() => setNavOpen((prev) => !prev)}
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+      </header>
+
+      {navOpen && <div className="sidebar-backdrop" onClick={closeNav} />}
+
+      <aside className={`sidebar${navOpen ? ' sidebar-open' : ''}`}>
         <div className="sidebar-brand">
           <span className="auth-brand-mark">E</span>
           Escrow Flow
         </div>
         <nav className="sidebar-nav">
-          <NavLink to="/" end className={navLinkClass}>
+          <NavLink to="/" end className={navLinkClass} onClick={closeNav}>
             Dashboard
           </NavLink>
-          <NavLink to="/wallet" className={navLinkClass}>
+          <NavLink to="/wallet" className={navLinkClass} onClick={closeNav}>
             Wallet
           </NavLink>
         </nav>
         <div className="sidebar-footer">
           {user && (
-            <Link to="/profile" className="sidebar-user">
+            <Link to="/profile" className="sidebar-user" onClick={closeNav}>
               <span className="sidebar-user-avatar">{initial}</span>
               <div>
                 <div className="sidebar-user-name">{user.name}</div>
