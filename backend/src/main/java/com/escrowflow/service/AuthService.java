@@ -54,6 +54,11 @@ public class AuthService {
 
     @Transactional
     public AuthResponse signup(SignupRequest request) {
+        if (request.role().isAdminRole()) {
+            throw new IllegalArgumentException(
+                    "Cannot self-register as ADMIN or SUPER_ADMIN. Use marketplace roles only.");
+        }
+
         if (userRepository.existsByEmail(request.email())) {
             throw new EmailAlreadyExistsException(request.email());
         }

@@ -26,13 +26,17 @@ users ─────┬──── wallets
 | name | VARCHAR(255) | NOT NULL |
 | email | VARCHAR(255) | NOT NULL, UNIQUE |
 | password_hash | VARCHAR(255) | NOT NULL |
-| role | VARCHAR(20) | NOT NULL — `CLIENT`, `FREELANCER`, or `BOTH` |
+| role | VARCHAR(20) | NOT NULL — `CLIENT`, `FREELANCER`, `BOTH`, `ADMIN`, or `SUPER_ADMIN` |
+| created_by_user_id | BIGINT | NULL, FK → users(id) — set when an admin creates another admin |
 | created_at | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
 
 **Notes**
 
-- A user can be client, freelancer, or both. For v1, a single `role` column is enough; a join table can come later if roles need to be independent.
+- Marketplace roles: `CLIENT`, `FREELANCER`, `BOTH`. Admin roles are exclusive — an admin cannot also be a client/freelancer.
+- `ADMIN` / `SUPER_ADMIN` cannot self-register via public signup. First `SUPER_ADMIN` is seeded by Flyway (`V4__admin_support.sql`).
+- Dev seed login: `superadmin@escrowflow.local` / `SuperAdmin@123` — change in production.
 - Passwords stored with BCrypt only — never plain text.
+- `created_by_user_id` tracks which admin provisioned another admin (null for self-signup and the seed super admin).
 
 ---
 
@@ -202,7 +206,9 @@ CREATE TABLE users (
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(20) NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_by_user_id BIGINT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by_user_id) REFERENCES users(id)
 );
 
 CREATE TABLE wallets (
