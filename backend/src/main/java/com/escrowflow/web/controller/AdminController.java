@@ -1,15 +1,20 @@
 package com.escrowflow.web.controller;
 
+import com.escrowflow.domain.enums.DisputeStatus;
 import com.escrowflow.service.AdminService;
 import com.escrowflow.web.dto.AdminDashboardStatsResponse;
 import com.escrowflow.web.dto.AdminUserResponse;
 import com.escrowflow.web.dto.CreateAdminRequest;
+import com.escrowflow.web.dto.DisputeResponse;
+import com.escrowflow.web.dto.ResolveDisputeRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -39,5 +44,23 @@ public class AdminController {
     @GetMapping("/dashboard")
     public AdminDashboardStatsResponse getDashboardStats() {
         return adminService.getDashboardStats();
+    }
+
+    @GetMapping("/disputes")
+    public List<DisputeResponse> listDisputes(
+            @RequestParam(required = false) DisputeStatus status) {
+        return adminService.listDisputes(status);
+    }
+
+    @GetMapping("/disputes/{id}")
+    public DisputeResponse getDispute(@PathVariable Long id) {
+        return adminService.getDispute(id);
+    }
+
+    @PostMapping("/disputes/{id}/resolve")
+    public DisputeResponse resolveDispute(
+            @PathVariable Long id,
+            @Valid @RequestBody ResolveDisputeRequest request) {
+        return adminService.resolveDispute(id, request);
     }
 }

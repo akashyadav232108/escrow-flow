@@ -1,16 +1,22 @@
 package com.escrowflow.service;
 
+import com.escrowflow.domain.Dispute;
 import com.escrowflow.domain.EscrowHold;
 import com.escrowflow.domain.Milestone;
 import com.escrowflow.domain.Project;
+import com.escrowflow.domain.User;
 import com.escrowflow.domain.Wallet;
+import com.escrowflow.domain.enums.DisputeResolution;
+import com.escrowflow.domain.enums.DisputeStatus;
 import com.escrowflow.domain.enums.EscrowHoldStatus;
 import com.escrowflow.domain.enums.MilestoneStatus;
 import com.escrowflow.domain.enums.ReferenceType;
 import com.escrowflow.infrastructure.DisputeRateLimitService;
 import com.escrowflow.infrastructure.RedisWalletLockService;
+import com.escrowflow.repository.DisputeRepository;
 import com.escrowflow.repository.EscrowHoldRepository;
 import com.escrowflow.repository.MilestoneRepository;
+import com.escrowflow.repository.UserRepository;
 import com.escrowflow.web.exception.ForbiddenException;
 import com.escrowflow.web.exception.InvalidMilestoneStateException;
 import com.escrowflow.web.exception.ResourceNotFoundException;
@@ -26,6 +32,8 @@ public class EscrowService {
 
     private final MilestoneRepository milestoneRepository;
     private final EscrowHoldRepository escrowHoldRepository;
+    private final DisputeRepository disputeRepository;
+    private final UserRepository userRepository;
     private final WalletService walletService;
     private final RedisWalletLockService lockService;
     private final DisputeRateLimitService disputeRateLimitService;
@@ -33,11 +41,15 @@ public class EscrowService {
     public EscrowService(
             MilestoneRepository milestoneRepository,
             EscrowHoldRepository escrowHoldRepository,
+            DisputeRepository disputeRepository,
+            UserRepository userRepository,
             WalletService walletService,
             RedisWalletLockService lockService,
             DisputeRateLimitService disputeRateLimitService) {
         this.milestoneRepository = milestoneRepository;
         this.escrowHoldRepository = escrowHoldRepository;
+        this.disputeRepository = disputeRepository;
+        this.userRepository = userRepository;
         this.walletService = walletService;
         this.lockService = lockService;
         this.disputeRateLimitService = disputeRateLimitService;
@@ -48,7 +60,7 @@ public class EscrowService {
                 .orElseThrow(() -> new ResourceNotFoundException("Milestone not found"));
 
         Project project = milestone.getProject();
-        
+
         if (!project.getClient().getId().equals(clientUserId)) {
             throw new ForbiddenException("Only the project client can lock funds");
         }
@@ -63,7 +75,7 @@ public class EscrowService {
 
         try {
             lockFundsTransactional(milestone, clientWallet);
-            log.info("Funds locked: milestoneId={} amount={} clientWalletId={}", 
+            log.info("Funds locked: milestoneId={} amount={} clientWalletId={}",
                     milestoneId, milestone.getAmount(), clientWallet.getId());
         } finally {
             lockService.releaseLock(clientWallet.getId(), lockRequestId);
@@ -103,6 +115,106 @@ public class EscrowService {
                     "Cannot approve milestone in status: " + milestone.getStatus());
         }
 
+        releaseToFreelancer(milestone);
+        log.info("Milestone approved by client: milestoneId={}", milestoneId);
+    }
+
+    /**
+     * Raises a dispute: milestone → DISPUTED, escrow stays HELD (no money movement).
+     * Client or assigned freelancer may raise. Admin resolves later.
+     */
+    @Transactional
+    public void dispute(Long milestoneId, Long raiserUserId, String reason) {
+        disputeRateLimitService.checkAndIncrement(raiserUserId);
+
+        Milestone milestone = milestoneRepository.findByIdWithProject(milestoneId)
+                .orElseThrow(() -> new ResourceNotFoundException("Milestone not found"));
+
+        Project project = milestone.getProject();
+        boolean isClient = project.getClient().getId().equals(raiserUserId);
+        boolean isFreelancer = project.getFreelancer() != null
+                && project.getFreelancer().getId().equals(raiserUserId);
+
+        if (!isClient && !isFreelancer) {
+            throw new ForbiddenException("Only the project client or freelancer can dispute milestone");
+        }
+
+        if (milestone.getStatus() != MilestoneStatus.SUBMITTED) {
+            throw new InvalidMilestoneStateException(
+                    "Cannot dispute milestone in status: " + milestone.getStatus());
+        }
+
+        EscrowHold hold = escrowHoldRepository.findByMilestoneId(milestoneId)
+                .orElseThrow(() -> new ResourceNotFoundException("Escrow hold not found"));
+
+        if (hold.getStatus() != EscrowHoldStatus.HELD) {
+            throw new InvalidMilestoneStateException("Escrow hold is not in HELD status");
+        }
+
+        if (disputeRepository.existsByMilestoneId(milestoneId)) {
+            throw new InvalidMilestoneStateException("A dispute already exists for this milestone");
+        }
+
+        User raiser = userRepository.findById(raiserUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        disputeRepository.save(Dispute.builder()
+                .milestone(milestone)
+                .raisedBy(raiser)
+                .reason(reason)
+                .status(DisputeStatus.OPEN)
+                .build());
+
+        milestone.setStatus(MilestoneStatus.DISPUTED);
+        milestone.setUpdatedAt(Instant.now());
+        milestoneRepository.save(milestone);
+
+        log.info("Milestone disputed (funds frozen): milestoneId={} amount={} raisedBy={} reason={}",
+                milestoneId, hold.getAmount(), raiserUserId, reason);
+    }
+
+    /**
+     * Admin resolution: FREELANCER_WINS → release escrow; CLIENT_WINS → refund client.
+     */
+    @Transactional
+    public void resolveDispute(Long disputeId, Long adminUserId, DisputeResolution decision, String adminNote) {
+        Dispute dispute = disputeRepository.findByIdWithDetails(disputeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Dispute not found"));
+
+        if (dispute.getStatus() != DisputeStatus.OPEN) {
+            throw new InvalidMilestoneStateException("Dispute is already resolved");
+        }
+
+        Milestone milestone = dispute.getMilestone();
+        if (milestone.getStatus() != MilestoneStatus.DISPUTED) {
+            throw new InvalidMilestoneStateException(
+                    "Cannot resolve dispute for milestone in status: " + milestone.getStatus());
+        }
+
+        User admin = userRepository.findById(adminUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Admin user not found"));
+
+        if (decision == DisputeResolution.FREELANCER_WINS) {
+            releaseToFreelancer(milestone);
+        } else {
+            refundToClient(milestone);
+        }
+
+        dispute.setStatus(DisputeStatus.RESOLVED);
+        dispute.setResolution(decision);
+        dispute.setResolvedBy(admin);
+        dispute.setAdminNote(adminNote);
+        dispute.setResolvedAt(Instant.now());
+        disputeRepository.save(dispute);
+
+        log.info("Dispute resolved: disputeId={} decision={} adminId={}",
+                disputeId, decision, adminUserId);
+    }
+
+    private void releaseToFreelancer(Milestone milestone) {
+        Project project = milestone.getProject();
+        Long milestoneId = milestone.getId();
+
         EscrowHold hold = escrowHoldRepository.findByMilestoneId(milestoneId)
                 .orElseThrow(() -> new ResourceNotFoundException("Escrow hold not found"));
 
@@ -126,27 +238,12 @@ public class EscrowService {
         milestone.setUpdatedAt(Instant.now());
         milestoneRepository.save(milestone);
 
-        log.info("Milestone approved: milestoneId={} amount={} freelancerWalletId={}", 
+        log.info("Escrow released to freelancer: milestoneId={} amount={} freelancerWalletId={}",
                 milestoneId, hold.getAmount(), freelancerWallet.getId());
     }
 
-    @Transactional
-    public void dispute(Long milestoneId, Long clientUserId, String reason) {
-        disputeRateLimitService.checkAndIncrement(clientUserId);
-
-        Milestone milestone = milestoneRepository.findByIdWithProject(milestoneId)
-                .orElseThrow(() -> new ResourceNotFoundException("Milestone not found"));
-
-        Project project = milestone.getProject();
-
-        if (!project.getClient().getId().equals(clientUserId)) {
-            throw new ForbiddenException("Only the project client can dispute milestone");
-        }
-
-        if (milestone.getStatus() != MilestoneStatus.SUBMITTED) {
-            throw new InvalidMilestoneStateException(
-                    "Cannot dispute milestone in status: " + milestone.getStatus());
-        }
+    private void refundToClient(Milestone milestone) {
+        Long milestoneId = milestone.getId();
 
         EscrowHold hold = escrowHoldRepository.findByMilestoneId(milestoneId)
                 .orElseThrow(() -> new ResourceNotFoundException("Escrow hold not found"));
@@ -165,7 +262,6 @@ public class EscrowService {
         milestone.setUpdatedAt(Instant.now());
         milestoneRepository.save(milestone);
 
-        log.info("Milestone disputed and refunded: milestoneId={} amount={} reason={}", 
-                milestoneId, hold.getAmount(), reason);
+        log.info("Escrow refunded to client: milestoneId={} amount={}", milestoneId, hold.getAmount());
     }
 }

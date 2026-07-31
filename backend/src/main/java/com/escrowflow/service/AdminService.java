@@ -1,19 +1,26 @@
 package com.escrowflow.service;
 
+import com.escrowflow.domain.Dispute;
+import com.escrowflow.domain.EscrowHold;
+import com.escrowflow.domain.Milestone;
+import com.escrowflow.domain.Project;
 import com.escrowflow.domain.User;
+import com.escrowflow.domain.enums.DisputeStatus;
 import com.escrowflow.domain.enums.EscrowHoldStatus;
-import com.escrowflow.domain.enums.MilestoneStatus;
 import com.escrowflow.domain.enums.ProjectStatus;
 import com.escrowflow.domain.enums.UserRole;
+import com.escrowflow.repository.DisputeRepository;
 import com.escrowflow.repository.EscrowHoldRepository;
-import com.escrowflow.repository.MilestoneRepository;
 import com.escrowflow.repository.ProjectRepository;
 import com.escrowflow.repository.UserRepository;
 import com.escrowflow.security.SecurityUtils;
 import com.escrowflow.web.dto.AdminDashboardStatsResponse;
 import com.escrowflow.web.dto.AdminUserResponse;
 import com.escrowflow.web.dto.CreateAdminRequest;
+import com.escrowflow.web.dto.DisputeResponse;
+import com.escrowflow.web.dto.ResolveDisputeRequest;
 import com.escrowflow.web.exception.EmailAlreadyExistsException;
+import com.escrowflow.web.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -31,19 +38,22 @@ public class AdminService {
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
     private final EscrowHoldRepository escrowHoldRepository;
-    private final MilestoneRepository milestoneRepository;
+    private final DisputeRepository disputeRepository;
+    private final EscrowService escrowService;
     private final PasswordEncoder passwordEncoder;
 
     public AdminService(
             UserRepository userRepository,
             ProjectRepository projectRepository,
             EscrowHoldRepository escrowHoldRepository,
-            MilestoneRepository milestoneRepository,
+            DisputeRepository disputeRepository,
+            EscrowService escrowService,
             PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.projectRepository = projectRepository;
         this.escrowHoldRepository = escrowHoldRepository;
-        this.milestoneRepository = milestoneRepository;
+        this.disputeRepository = disputeRepository;
+        this.escrowService = escrowService;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -102,7 +112,34 @@ public class AdminService {
                 projectRepository.countByStatus(ProjectStatus.COMPLETED),
                 projectRepository.countByStatus(ProjectStatus.CANCELLED),
                 escrowHoldRepository.sumAmountByStatus(EscrowHoldStatus.HELD),
-                milestoneRepository.countByStatus(MilestoneStatus.DISPUTED));
+                disputeRepository.countByStatus(DisputeStatus.OPEN));
+    }
+
+    @Transactional(readOnly = true)
+    public List<DisputeResponse> listDisputes(DisputeStatus status) {
+        SecurityUtils.requireAdmin();
+        return disputeRepository.findAllWithDetails(status).stream()
+                .map(this::toDisputeResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public DisputeResponse getDispute(Long disputeId) {
+        SecurityUtils.requireAdmin();
+        Dispute dispute = disputeRepository.findByIdWithDetails(disputeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Dispute not found"));
+        return toDisputeResponse(dispute);
+    }
+
+    @Transactional
+    public DisputeResponse resolveDispute(Long disputeId, ResolveDisputeRequest request) {
+        SecurityUtils.requireAdmin();
+        escrowService.resolveDispute(
+                disputeId,
+                SecurityUtils.getCurrentUserId(),
+                request.decision(),
+                request.note());
+        return getDispute(disputeId);
     }
 
     private AdminUserResponse toAdminUserResponse(User user) {
@@ -115,5 +152,42 @@ public class AdminService {
                 user.getCreatedAt(),
                 createdBy != null ? createdBy.getId() : null,
                 createdBy != null ? createdBy.getName() : null);
+    }
+
+    private DisputeResponse toDisputeResponse(Dispute dispute) {
+        Milestone milestone = dispute.getMilestone();
+        Project project = milestone.getProject();
+        User raisedBy = dispute.getRaisedBy();
+        User resolvedBy = dispute.getResolvedBy();
+        User freelancer = project.getFreelancer();
+
+        EscrowHoldStatus holdStatus = escrowHoldRepository.findByMilestoneId(milestone.getId())
+                .map(EscrowHold::getStatus)
+                .orElse(null);
+
+        return new DisputeResponse(
+                dispute.getId(),
+                milestone.getId(),
+                milestone.getTitle(),
+                milestone.getAmount(),
+                milestone.getStatus(),
+                holdStatus,
+                project.getId(),
+                project.getTitle(),
+                project.getClient().getId(),
+                project.getClient().getName(),
+                freelancer != null ? freelancer.getId() : null,
+                freelancer != null ? freelancer.getName() : null,
+                raisedBy.getId(),
+                raisedBy.getName(),
+                dispute.getReason(),
+                dispute.getStatus(),
+                dispute.getResolution(),
+                resolvedBy != null ? resolvedBy.getId() : null,
+                resolvedBy != null ? resolvedBy.getName() : null,
+                dispute.getAdminNote(),
+                milestone.getSubmittedNote(),
+                dispute.getCreatedAt(),
+                dispute.getResolvedAt());
     }
 }
