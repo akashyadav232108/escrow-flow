@@ -3,7 +3,10 @@ package com.escrowflow.service;
 import com.escrowflow.domain.Milestone;
 import com.escrowflow.domain.Project;
 import com.escrowflow.domain.User;
+import com.escrowflow.domain.enums.AccountStatus;
 import com.escrowflow.domain.enums.MilestoneStatus;
+import com.escrowflow.domain.enums.NotificationReferenceType;
+import com.escrowflow.domain.enums.NotificationType;
 import com.escrowflow.domain.enums.ProjectStatus;
 import com.escrowflow.domain.enums.UserRole;
 import com.escrowflow.repository.ProjectRepository;
@@ -21,18 +24,29 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.EnumSet;
 import java.util.List;
 
 @Service
 @Slf4j
 public class ProjectService {
 
+    private static final EnumSet<UserRole> FREELANCER_ROLES =
+            EnumSet.of(UserRole.FREELANCER, UserRole.BOTH);
+    /** Demo fan-out cap so project-created alerts stay bounded. */
+    private static final int PROJECT_CREATED_NOTIFY_LIMIT = 50;
+
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
-    public ProjectService(ProjectRepository projectRepository, UserRepository userRepository) {
+    public ProjectService(
+            ProjectRepository projectRepository,
+            UserRepository userRepository,
+            NotificationService notificationService) {
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -62,6 +76,25 @@ public class ProjectService {
         }
 
         Project saved = projectRepository.save(project);
+
+        List<Long> freelancerIds = userRepository
+                .findMarketplaceUsers(FREELANCER_ROLES, AccountStatus.ACTIVE)
+                .stream()
+                .map(User::getId)
+                .filter(id -> !id.equals(client.getId()))
+                .limit(PROJECT_CREATED_NOTIFY_LIMIT)
+                .toList();
+
+        if (!freelancerIds.isEmpty()) {
+            notificationService.notifyMany(
+                    freelancerIds,
+                    NotificationType.PROJECT_CREATED,
+                    "New open project",
+                    "A new project is open: \"" + saved.getTitle() + "\".",
+                    NotificationReferenceType.PROJECT,
+                    saved.getId());
+        }
+
         log.info("Project created: projectId={} clientId={} milestoneCount={}",
                 saved.getId(), client.getId(), saved.getMilestones().size());
 

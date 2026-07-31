@@ -10,7 +10,10 @@ import com.escrowflow.domain.enums.DisputeResolution;
 import com.escrowflow.domain.enums.DisputeStatus;
 import com.escrowflow.domain.enums.EscrowHoldStatus;
 import com.escrowflow.domain.enums.MilestoneStatus;
+import com.escrowflow.domain.enums.NotificationReferenceType;
+import com.escrowflow.domain.enums.NotificationType;
 import com.escrowflow.domain.enums.ReferenceType;
+import com.escrowflow.domain.enums.UserRole;
 import com.escrowflow.infrastructure.DisputeRateLimitService;
 import com.escrowflow.infrastructure.RedisWalletLockService;
 import com.escrowflow.repository.DisputeRepository;
@@ -25,10 +28,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
 
 @Service
 @Slf4j
 public class EscrowService {
+
+    private static final EnumSet<UserRole> ADMIN_ROLES = EnumSet.of(UserRole.ADMIN, UserRole.SUPER_ADMIN);
 
     private final MilestoneRepository milestoneRepository;
     private final EscrowHoldRepository escrowHoldRepository;
@@ -37,6 +45,7 @@ public class EscrowService {
     private final WalletService walletService;
     private final RedisWalletLockService lockService;
     private final DisputeRateLimitService disputeRateLimitService;
+    private final NotificationService notificationService;
 
     public EscrowService(
             MilestoneRepository milestoneRepository,
@@ -45,7 +54,8 @@ public class EscrowService {
             UserRepository userRepository,
             WalletService walletService,
             RedisWalletLockService lockService,
-            DisputeRateLimitService disputeRateLimitService) {
+            DisputeRateLimitService disputeRateLimitService,
+            NotificationService notificationService) {
         this.milestoneRepository = milestoneRepository;
         this.escrowHoldRepository = escrowHoldRepository;
         this.disputeRepository = disputeRepository;
@@ -53,6 +63,7 @@ public class EscrowService {
         this.walletService = walletService;
         this.lockService = lockService;
         this.disputeRateLimitService = disputeRateLimitService;
+        this.notificationService = notificationService;
     }
 
     public void lockFunds(Long milestoneId, Long clientUserId) {
@@ -158,7 +169,7 @@ public class EscrowService {
         User raiser = userRepository.findById(raiserUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        disputeRepository.save(Dispute.builder()
+        Dispute dispute = disputeRepository.save(Dispute.builder()
                 .milestone(milestone)
                 .raisedBy(raiser)
                 .reason(reason)
@@ -168,6 +179,26 @@ public class EscrowService {
         milestone.setStatus(MilestoneStatus.DISPUTED);
         milestone.setUpdatedAt(Instant.now());
         milestoneRepository.save(milestone);
+
+        Long otherPartyId = isClient
+                ? project.getFreelancer().getId()
+                : project.getClient().getId();
+
+        List<Long> recipientIds = new ArrayList<>();
+        recipientIds.add(otherPartyId);
+        userRepository.findByRoleInWithCreatedBy(ADMIN_ROLES).stream()
+                .map(User::getId)
+                .filter(id -> !id.equals(raiserUserId) && !id.equals(otherPartyId))
+                .forEach(recipientIds::add);
+
+        notificationService.notifyMany(
+                recipientIds,
+                NotificationType.DISPUTE_RAISED,
+                "Dispute raised",
+                "A dispute was raised on milestone \"" + milestone.getTitle()
+                        + "\" for project \"" + project.getTitle() + "\".",
+                NotificationReferenceType.DISPUTE,
+                dispute.getId());
 
         log.info("Milestone disputed (funds frozen): milestoneId={} amount={} raisedBy={} reason={}",
                 milestoneId, hold.getAmount(), raiserUserId, reason);
@@ -206,6 +237,26 @@ public class EscrowService {
         dispute.setAdminNote(adminNote);
         dispute.setResolvedAt(Instant.now());
         disputeRepository.save(dispute);
+
+        Project project = milestone.getProject();
+        List<Long> recipientIds = new ArrayList<>();
+        recipientIds.add(project.getClient().getId());
+        if (project.getFreelancer() != null) {
+            recipientIds.add(project.getFreelancer().getId());
+        }
+
+        String outcome = decision == DisputeResolution.FREELANCER_WINS
+                ? "freelancer wins"
+                : "client wins";
+        notificationService.notifyMany(
+                recipientIds,
+                NotificationType.DISPUTE_RESOLVED,
+                "Dispute resolved",
+                "Dispute on milestone \"" + milestone.getTitle()
+                        + "\" for project \"" + project.getTitle()
+                        + "\" was resolved (" + outcome + ").",
+                NotificationReferenceType.DISPUTE,
+                dispute.getId());
 
         log.info("Dispute resolved: disputeId={} decision={} adminId={}",
                 disputeId, decision, adminUserId);

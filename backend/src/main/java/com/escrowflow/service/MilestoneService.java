@@ -3,6 +3,8 @@ package com.escrowflow.service;
 import com.escrowflow.domain.Milestone;
 import com.escrowflow.domain.Project;
 import com.escrowflow.domain.enums.MilestoneStatus;
+import com.escrowflow.domain.enums.NotificationReferenceType;
+import com.escrowflow.domain.enums.NotificationType;
 import com.escrowflow.repository.MilestoneRepository;
 import com.escrowflow.web.exception.ForbiddenException;
 import com.escrowflow.web.exception.InvalidMilestoneStateException;
@@ -18,9 +20,11 @@ import java.time.Instant;
 public class MilestoneService {
 
     private final MilestoneRepository milestoneRepository;
+    private final NotificationService notificationService;
 
-    public MilestoneService(MilestoneRepository milestoneRepository) {
+    public MilestoneService(MilestoneRepository milestoneRepository, NotificationService notificationService) {
         this.milestoneRepository = milestoneRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -43,6 +47,16 @@ public class MilestoneService {
         milestone.setStatus(MilestoneStatus.SUBMITTED);
         milestone.setUpdatedAt(Instant.now());
         milestoneRepository.save(milestone);
+
+        Long clientId = project.getClient().getId();
+        notificationService.notify(
+                clientId,
+                NotificationType.WORK_SUBMITTED,
+                "Work submitted",
+                "Freelancer submitted work for milestone \"" + milestone.getTitle()
+                        + "\" on project \"" + project.getTitle() + "\".",
+                NotificationReferenceType.MILESTONE,
+                milestone.getId());
 
         log.info("Work submitted: milestoneId={} freelancerId={}", milestoneId, freelancerUserId);
     }
