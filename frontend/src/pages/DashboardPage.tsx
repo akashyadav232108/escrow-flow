@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import CreateProjectForm from '../components/CreateProjectForm';
 import ProjectCard from '../components/ProjectCard';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchProjects } from '../store/slices/projectsSlice';
+import { isAdminRole } from '../utils/roles';
 
 export default function DashboardPage() {
   const dispatch = useAppDispatch();
@@ -11,8 +13,14 @@ export default function DashboardPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchProjects(undefined));
-  }, [dispatch]);
+    if (!isAdminRole(user?.role)) {
+      dispatch(fetchProjects(undefined));
+    }
+  }, [dispatch, user?.role]);
+
+  if (isAdminRole(user?.role)) {
+    return <Navigate to="/admin" replace />;
+  }
 
   const isClient = user?.role === 'CLIENT' || user?.role === 'BOTH';
   const isFreelancer = user?.role === 'FREELANCER' || user?.role === 'BOTH';

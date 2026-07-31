@@ -91,3 +91,80 @@ export interface ApiErrorResponse {
   message: string;
   timestamp: string;
 }
+
+export type DisputeStatus = 'OPEN' | 'RESOLVED';
+export type DisputeResolution = 'FREELANCER_WINS' | 'CLIENT_WINS';
+export type EscrowHoldStatus = 'HELD' | 'RELEASED' | 'REFUNDED';
+
+export interface AdminDashboardStats {
+  totalUsers: number;
+  clients: number;
+  freelancers: number;
+  both: number;
+  admins: number;
+  warnedUsers: number;
+  suspendedUsers: number;
+  openProjects: number;
+  inProgressProjects: number;
+  completedProjects: number;
+  cancelledProjects: number;
+  totalEscrowHeld: number;
+  disputedMilestones: number;
+}
+
+export interface AdminUser {
+  id: number;
+  name: string;
+  email: string;
+  role: Role;
+  createdAt: string;
+  createdById: number | null;
+  createdByName: string | null;
+}
+
+export interface UserWarning {
+  id: number;
+  reason: string;
+  issuedByAdminId: number;
+  issuedByAdminName: string;
+  createdAt: string;
+}
+
+export interface ManagedUser {
+  id: number;
+  name: string;
+  email: string;
+  role: Role;
+  accountStatus: AccountStatus;
+  createdAt: string;
+  deletedAt: string | null;
+  warningCount: number;
+  warnings: UserWarning[];
+}
+
+export interface DisputeDetail {
+  id: number;
+  milestoneId: number;
+  milestoneTitle: string;
+  amount: number;
+  milestoneStatus: MilestoneStatus;
+  escrowHoldStatus: EscrowHoldStatus | null;
+  projectId: number;
+  projectTitle: string;
+  clientId: number;
+  clientName: string;
+  freelancerId: number | null;
+  freelancerName: string | null;
+  raisedById: number;
+  raisedByName: string;
+  reason: string;
+  status: DisputeStatus;
+  resolution: DisputeResolution | null;
+  resolvedByAdminId: number | null;
+  resolvedByAdminName: string | null;
+  adminNote: string | null;
+  submittedNote: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
+}
+

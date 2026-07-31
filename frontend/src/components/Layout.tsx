@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import BackButton from './BackButton';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { logout } from '../store/slices/authSlice';
+import { isAdminRole, isSuperAdminRole } from '../utils/roles';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `sidebar-link${isActive ? ' sidebar-link-active' : ''}`;
@@ -12,6 +13,8 @@ export default function Layout() {
   const navigate = useNavigate();
   const user = useAppSelector((state) => state.auth.user);
   const [navOpen, setNavOpen] = useState(false);
+  const admin = isAdminRole(user?.role);
+  const superAdmin = isSuperAdminRole(user?.role);
 
   const closeNav = () => setNavOpen(false);
 
@@ -51,12 +54,33 @@ export default function Layout() {
           Escrow Flow
         </div>
         <nav className="sidebar-nav">
-          <NavLink to="/" end className={navLinkClass} onClick={closeNav}>
-            Dashboard
-          </NavLink>
-          <NavLink to="/wallet" className={navLinkClass} onClick={closeNav}>
-            Wallet
-          </NavLink>
+          {admin ? (
+            <>
+              <NavLink to="/admin" end className={navLinkClass} onClick={closeNav}>
+                Admin
+              </NavLink>
+              <NavLink to="/admin/disputes" className={navLinkClass} onClick={closeNav}>
+                Disputes
+              </NavLink>
+              <NavLink to="/admin/users" className={navLinkClass} onClick={closeNav}>
+                Users
+              </NavLink>
+              {superAdmin && (
+                <NavLink to="/admin/admins" className={navLinkClass} onClick={closeNav}>
+                  Admins
+                </NavLink>
+              )}
+            </>
+          ) : (
+            <>
+              <NavLink to="/" end className={navLinkClass} onClick={closeNav}>
+                Dashboard
+              </NavLink>
+              <NavLink to="/wallet" className={navLinkClass} onClick={closeNav}>
+                Wallet
+              </NavLink>
+            </>
+          )}
         </nav>
         <div className="sidebar-footer">
           {user && (

@@ -5,6 +5,7 @@ import PasswordInput from '../components/PasswordInput';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { login } from '../store/slices/authSlice';
 import { extractApiErrorMessage } from '../utils/errors';
+import { isAdminRole } from '../utils/roles';
 
 export default function LoginPage() {
   const dispatch = useAppDispatch();
@@ -21,8 +22,13 @@ export default function LoginPage() {
     event.preventDefault();
     setError(null);
     try {
-      await dispatch(login({ email, password })).unwrap();
-      navigate(from, { replace: true });
+      const result = await dispatch(login({ email, password })).unwrap();
+      const dest = isAdminRole(result.user.role)
+        ? from.startsWith('/admin')
+          ? from
+          : '/admin'
+        : from;
+      navigate(dest, { replace: true });
     } catch (err) {
       setError(extractApiErrorMessage(err, 'Login failed'));
     }
