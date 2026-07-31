@@ -2,7 +2,6 @@ package com.escrowflow;
 
 import com.escrowflow.domain.User;
 import com.escrowflow.domain.enums.UserRole;
-import com.escrowflow.repository.MilestoneRepository;
 import com.escrowflow.repository.UserRepository;
 import com.escrowflow.security.UserPrincipal;
 import com.escrowflow.service.AuthService;
@@ -53,9 +52,6 @@ class WalletConsistencyTest {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private MilestoneRepository milestoneRepository;
-
     private User client;
     private User freelancer;
 
@@ -105,29 +101,28 @@ class WalletConsistencyTest {
         authenticate(freelancer.getId(), freelancer.getEmail(), UserRole.FREELANCER);
         projectService.accept(project.id());
 
-        List<com.escrowflow.domain.Milestone> milestones = milestoneRepository.findByProjectId(project.id());
-        var m1 = milestones.get(0);
-        var m2 = milestones.get(1);
+        var m1Id = project.milestones().get(0).id();
+        var m2Id = project.milestones().get(1).id();
 
         authenticate(client.getId(), client.getEmail(), UserRole.CLIENT);
-        escrowService.lockFunds(m1.getId(), client.getId());
+        escrowService.lockFunds(m1Id, client.getId());
 
         authenticate(freelancer.getId(), freelancer.getEmail(), UserRole.FREELANCER);
-        milestoneService.submit(m1.getId(), freelancer.getId(), "Work submitted");
+        milestoneService.submit(m1Id, freelancer.getId(), "Work submitted");
 
         authenticate(client.getId(), client.getEmail(), UserRole.CLIENT);
-        escrowService.approve(m1.getId(), client.getId());
+        escrowService.approve(m1Id, client.getId());
 
         assertThat(walletConsistencyService.areAllWalletsConsistent()).isTrue();
         assertThat(walletConsistencyService.findInconsistentWalletIds()).isEmpty();
 
-        escrowService.lockFunds(m2.getId(), client.getId());
+        escrowService.lockFunds(m2Id, client.getId());
 
         authenticate(freelancer.getId(), freelancer.getEmail(), UserRole.FREELANCER);
-        milestoneService.submit(m2.getId(), freelancer.getId(), "Work submitted");
+        milestoneService.submit(m2Id, freelancer.getId(), "Work submitted");
 
         authenticate(client.getId(), client.getEmail(), UserRole.CLIENT);
-        escrowService.dispute(m2.getId(), client.getId(), "Not satisfied");
+        escrowService.dispute(m2Id, client.getId(), "Not satisfied");
 
         assertThat(walletConsistencyService.areAllWalletsConsistent()).isTrue();
         assertThat(walletConsistencyService.findInconsistentWalletIds()).isEmpty();

@@ -75,6 +75,8 @@ public class ProjectService {
             case CLIENT -> projectRepository.findByClient(principal.getUserId(), status);
             case FREELANCER -> projectRepository.findForFreelancerView(principal.getUserId(), status);
             case BOTH -> projectRepository.findForBothRoles(principal.getUserId(), status);
+            case ADMIN, SUPER_ADMIN ->
+                    throw new ForbiddenException("Admins cannot list marketplace projects");
         };
         return projects.stream().map(this::toSummaryResponse).toList();
     }
