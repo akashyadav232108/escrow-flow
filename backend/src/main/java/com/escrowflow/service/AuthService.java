@@ -15,6 +15,7 @@ import com.escrowflow.web.dto.LoginRequest;
 import com.escrowflow.web.dto.SignupRequest;
 import com.escrowflow.web.dto.UserResponse;
 import com.escrowflow.web.dto.ChangePasswordRequest;
+import com.escrowflow.web.exception.AccountNotActiveException;
 import com.escrowflow.web.exception.EmailAlreadyExistsException;
 import com.escrowflow.web.exception.InvalidCredentialsException;
 import com.escrowflow.web.exception.InvalidCurrentPasswordException;
@@ -97,6 +98,15 @@ public class AuthService {
             throw new InvalidCredentialsException();
         }
 
+        if (user.getAccountStatus() == com.escrowflow.domain.enums.AccountStatus.SUSPENDED) {
+            throw new AccountNotActiveException(
+                    "ACCOUNT_SUSPENDED", "Your account has been suspended. Contact support.");
+        }
+        if (user.getAccountStatus() == com.escrowflow.domain.enums.AccountStatus.DELETED) {
+            throw new AccountNotActiveException(
+                    "ACCOUNT_DELETED", "This account has been removed.");
+        }
+
         return buildAuthResponse(user);
     }
 
@@ -117,7 +127,13 @@ public class AuthService {
     private AuthResponse buildAuthResponse(User user) {
         String token = jwtService.generateToken(user);
         UserResponse userResponse =
-                new UserResponse(user.getId(), user.getName(), user.getEmail(), user.getRole(), user.getCreatedAt());
+                new UserResponse(
+                        user.getId(),
+                        user.getName(),
+                        user.getEmail(),
+                        user.getRole(),
+                        user.getAccountStatus(),
+                        user.getCreatedAt());
         return new AuthResponse(token, userResponse);
     }
 }

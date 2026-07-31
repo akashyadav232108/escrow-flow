@@ -41,4 +41,13 @@ public interface DisputeRepository extends JpaRepository<Dispute, Long> {
             WHERE d.id = :id
             """)
     Optional<Dispute> findByIdWithDetails(@Param("id") Long id);
+
+    @Query("""
+            SELECT COUNT(d) FROM Dispute d
+            JOIN d.milestone m
+            JOIN m.project p
+            WHERE d.status = com.escrowflow.domain.enums.DisputeStatus.OPEN
+              AND (p.client.id = :userId OR p.freelancer.id = :userId)
+            """)
+    long countOpenDisputesForUser(@Param("userId") Long userId);
 }

@@ -1,11 +1,14 @@
 package com.escrowflow.web.controller;
 
+import com.escrowflow.domain.enums.AccountStatus;
 import com.escrowflow.domain.enums.DisputeStatus;
 import com.escrowflow.service.AdminService;
 import com.escrowflow.web.dto.AdminDashboardStatsResponse;
 import com.escrowflow.web.dto.AdminUserResponse;
 import com.escrowflow.web.dto.CreateAdminRequest;
 import com.escrowflow.web.dto.DisputeResponse;
+import com.escrowflow.web.dto.ManagedUserResponse;
+import com.escrowflow.web.dto.ModerationReasonRequest;
 import com.escrowflow.web.dto.ResolveDisputeRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -62,5 +65,42 @@ public class AdminController {
             @PathVariable Long id,
             @Valid @RequestBody ResolveDisputeRequest request) {
         return adminService.resolveDispute(id, request);
+    }
+
+    @GetMapping("/users")
+    public List<ManagedUserResponse> listUsers(
+            @RequestParam(required = false) AccountStatus status) {
+        return adminService.listUsers(status);
+    }
+
+    @GetMapping("/users/{id}")
+    public ManagedUserResponse getUser(@PathVariable Long id) {
+        return adminService.getUser(id);
+    }
+
+    @PostMapping("/users/{id}/warnings")
+    public ManagedUserResponse warnUser(
+            @PathVariable Long id,
+            @Valid @RequestBody ModerationReasonRequest request) {
+        return adminService.warnUser(id, request);
+    }
+
+    @PostMapping("/users/{id}/suspend")
+    public ManagedUserResponse suspendUser(
+            @PathVariable Long id,
+            @Valid @RequestBody ModerationReasonRequest request) {
+        return adminService.suspendUser(id, request);
+    }
+
+    @PostMapping("/users/{id}/unsuspend")
+    public ManagedUserResponse unsuspendUser(@PathVariable Long id) {
+        return adminService.unsuspendUser(id);
+    }
+
+    @PostMapping("/users/{id}/delete")
+    public ManagedUserResponse softDeleteUser(
+            @PathVariable Long id,
+            @Valid @RequestBody ModerationReasonRequest request) {
+        return adminService.softDeleteUser(id, request);
     }
 }

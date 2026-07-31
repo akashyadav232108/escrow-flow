@@ -1,5 +1,7 @@
 package com.escrowflow.security;
 
+import com.escrowflow.domain.User;
+import com.escrowflow.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,9 +19,11 @@ import java.io.IOException;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final UserRepository userRepository;
 
-    public JwtAuthFilter(JwtService jwtService) {
+    public JwtAuthFilter(JwtService jwtService, UserRepository userRepository) {
         this.jwtService = jwtService;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -43,15 +47,21 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         if (SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserPrincipal principal = new UserPrincipal(
-                    jwtService.extractUserId(token),
-                    jwtService.extractEmail(token),
-                    jwtService.extractRole(token));
+            Long userId = jwtService.extractUserId(token);
+            User user = userRepository.findById(userId).orElse(null);
 
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            // Suspended / deleted accounts lose access even with a still-valid JWT.
+            if (user != null && user.isLoginAllowed()) {
+                UserPrincipal principal = new UserPrincipal(
+                        user.getId(),
+                        user.getEmail(),
+                        user.getRole());
+
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
         }
 
         filterChain.doFilter(request, response);

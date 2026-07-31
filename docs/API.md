@@ -53,7 +53,8 @@ Admin roles (`ADMIN`, `SUPER_ADMIN`) **cannot** be self-registered here — they
     "id": 1,
     "name": "Jane Client",
     "email": "jane@example.com",
-    "role": "CLIENT"
+    "role": "CLIENT",
+    "accountStatus": "ACTIVE"
   }
 }
 ```
@@ -382,6 +383,8 @@ Platform stats for the admin dashboard.
   "freelancers": 15,
   "both": 5,
   "admins": 2,
+  "warnedUsers": 3,
+  "suspendedUsers": 1,
   "openProjects": 8,
   "inProgressProjects": 12,
   "completedProjects": 10,
@@ -431,6 +434,59 @@ Admin decides the dispute. Money moves only here:
 
 ---
 
+### GET `/admin/users`
+
+List marketplace users (`CLIENT` / `FREELANCER` / `BOTH`). Optional `?status=WARNED|SUSPENDED|ACTIVE|DELETED`.
+When `status` is omitted, deleted users are excluded.
+
+---
+
+### GET `/admin/users/{id}`
+
+User detail including warning history.
+
+---
+
+### POST `/admin/users/{id}/warnings`
+
+Issue a warning. If the user is `ACTIVE`, status becomes `WARNED`.
+
+**Request**
+
+```json
+{
+  "reason": "Abusive messaging toward freelancer"
+}
+```
+
+---
+
+### POST `/admin/users/{id}/suspend`
+
+Suspend account (blocks login and JWT use). Requires `reason`.
+
+---
+
+### POST `/admin/users/{id}/unsuspend`
+
+Restore suspended user to `WARNED` (if they have warnings) or `ACTIVE`.
+
+---
+
+### POST `/admin/users/{id}/delete`
+
+Soft-delete account (`DELETED` + `deletedAt`). Blocked if the user has open disputes, held escrow, or in-progress projects.
+
+**Request**
+
+```json
+{
+  "reason": "Repeated policy violations after warnings"
+}
+```
+
+---
+
 ## Error format
 
 ```json
@@ -454,6 +510,8 @@ Common error codes:
 | `INVALID_REQUEST` | 400 |
 | `UNAUTHORIZED` | 401 |
 | `FORBIDDEN` | 403 |
+| `ACCOUNT_SUSPENDED` | 403 |
+| `ACCOUNT_DELETED` | 403 |
 | `RATE_LIMIT_EXCEEDED` | 429 |
 
 ---
@@ -482,3 +540,9 @@ Common error codes:
 | 18 | GET | `/admin/disputes` | Admin |
 | 19 | GET | `/admin/disputes/{id}` | Admin |
 | 20 | POST | `/admin/disputes/{id}/resolve` | Admin |
+| 21 | GET | `/admin/users` | Admin |
+| 22 | GET | `/admin/users/{id}` | Admin |
+| 23 | POST | `/admin/users/{id}/warnings` | Admin |
+| 24 | POST | `/admin/users/{id}/suspend` | Admin |
+| 25 | POST | `/admin/users/{id}/unsuspend` | Admin |
+| 26 | POST | `/admin/users/{id}/delete` | Admin |

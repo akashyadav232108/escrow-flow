@@ -8,6 +8,8 @@ public record AdminDashboardStatsResponse(
         long freelancers,
         long both,
         long admins,
+        long warnedUsers,
+        long suspendedUsers,
         long openProjects,
         long inProgressProjects,
         long completedProjects,

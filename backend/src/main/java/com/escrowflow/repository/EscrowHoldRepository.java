@@ -19,4 +19,13 @@ public interface EscrowHoldRepository extends JpaRepository<EscrowHold, Long> {
             WHERE h.status = :status
             """)
     BigDecimal sumAmountByStatus(@Param("status") EscrowHoldStatus status);
+
+    @Query("""
+            SELECT COUNT(h) FROM EscrowHold h
+            JOIN h.milestone m
+            JOIN m.project p
+            WHERE h.status = com.escrowflow.domain.enums.EscrowHoldStatus.HELD
+              AND p.client.id = :userId
+            """)
+    long countHeldEscrowForClient(@Param("userId") Long userId);
 }

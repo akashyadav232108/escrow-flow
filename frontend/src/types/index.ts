@@ -1,10 +1,13 @@
-export type Role = 'CLIENT' | 'FREELANCER' | 'BOTH';
+export type Role = 'CLIENT' | 'FREELANCER' | 'BOTH' | 'ADMIN' | 'SUPER_ADMIN';
+
+export type AccountStatus = 'ACTIVE' | 'WARNED' | 'SUSPENDED' | 'DELETED';
 
 export interface User {
   id: number;
   name: string;
   email: string;
   role: Role;
+  accountStatus?: AccountStatus;
   createdAt?: string;
 }
 

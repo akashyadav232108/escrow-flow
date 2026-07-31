@@ -28,8 +28,10 @@ users ─────┬──── wallets
 | email | VARCHAR(255) | NOT NULL, UNIQUE |
 | password_hash | VARCHAR(255) | NOT NULL |
 | role | VARCHAR(20) | NOT NULL — `CLIENT`, `FREELANCER`, `BOTH`, `ADMIN`, or `SUPER_ADMIN` |
+| account_status | VARCHAR(20) | NOT NULL — `ACTIVE`, `WARNED`, `SUSPENDED`, `DELETED` (default `ACTIVE`) |
 | created_by_user_id | BIGINT | NULL, FK → users(id) — set when an admin creates another admin |
 | created_at | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| deleted_at | TIMESTAMP | NULL — set on soft delete |
 
 **Notes**
 
@@ -38,6 +40,7 @@ users ─────┬──── wallets
 - Dev seed login: `superadmin@escrowflow.local` / `SuperAdmin@123` — change in production.
 - Passwords stored with BCrypt only — never plain text.
 - `created_by_user_id` tracks which admin provisioned another admin (null for self-signup and the seed super admin).
+- Suspended/deleted users cannot log in; existing JWTs are rejected by the auth filter.
 
 ---
 
@@ -127,6 +130,23 @@ users ─────┬──── wallets
 - Raising a dispute does **not** move money — escrow hold stays `HELD`.
 - Admin resolve: `FREELANCER_WINS` → release to freelancer; `CLIENT_WINS` → refund client.
 - Client or assigned freelancer may raise a dispute while milestone is `SUBMITTED`.
+
+---
+
+### user_warnings
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | BIGINT | PK, AUTO_INCREMENT |
+| user_id | BIGINT | NOT NULL, FK → users(id) |
+| issued_by_admin_id | BIGINT | NOT NULL, FK → users(id) |
+| reason | TEXT | NOT NULL |
+| created_at | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+
+**Notes**
+
+- Append-only audit of warnings / suspend / delete reasons.
+- Soft delete is blocked while the user has open disputes, held escrow, or in-progress projects.
 
 ---
 

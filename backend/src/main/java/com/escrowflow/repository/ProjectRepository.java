@@ -46,4 +46,8 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     Optional<Project> findByIdWithDetails(@Param("id") Long id);
 
     long countByStatus(ProjectStatus status);
+
+    long countByClient_IdAndStatus(Long clientId, ProjectStatus status);
+
+    long countByFreelancer_IdAndStatus(Long freelancerId, ProjectStatus status);
 }
