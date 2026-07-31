@@ -99,7 +99,7 @@ export const approveMilestone = createAsyncThunk(
 
 export const disputeMilestone = createAsyncThunk(
   'projects/disputeMilestone',
-  async ({ milestoneId, reason }: { milestoneId: number; reason?: string }, { rejectWithValue }) => {
+  async ({ milestoneId, reason }: { milestoneId: number; reason: string }, { rejectWithValue }) => {
     try {
       return await projectApi.disputeMilestone(milestoneId, reason);
     } catch (err) {

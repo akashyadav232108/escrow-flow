@@ -29,8 +29,6 @@ export const projectApi = {
   approveMilestone: (milestoneId: number) =>
     api.post(`/milestones/${milestoneId}/approve`).then((res) => res.data),
 
-  disputeMilestone: (milestoneId: number, reason?: string) =>
-    api
-      .post(`/milestones/${milestoneId}/dispute`, reason ? { reason } : {})
-      .then((res) => res.data),
+  disputeMilestone: (milestoneId: number, reason: string) =>
+    api.post(`/milestones/${milestoneId}/dispute`, { reason }).then((res) => res.data),
 };

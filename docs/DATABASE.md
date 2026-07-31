@@ -11,7 +11,8 @@ users ─────┬──── wallets
            │         │
            │         └── milestones
            │                   │
-           │                   └── escrow_holds (1:1 per milestone)
+           │                   ├── escrow_holds (1:1 per milestone)
+           │                   └── disputes (1:1 per milestone, when raised)
            │
            └── wallet_transactions (via wallet_id)
 ```
@@ -101,8 +102,31 @@ users ─────┬──── wallets
 | `FUNDS_LOCKED` | Client debited, escrow hold active |
 | `SUBMITTED` | Freelancer submitted work |
 | `APPROVED` | Client approved; funds released to freelancer |
-| `DISPUTED` | Client disputed submitted work |
-| `REFUNDED` | Funds returned to client (terminal) |
+| `DISPUTED` | Dispute raised; escrow stays `HELD` until admin resolves |
+| `REFUNDED` | Funds returned to client after dispute resolution (terminal) |
+
+---
+
+### disputes
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | BIGINT | PK, AUTO_INCREMENT |
+| milestone_id | BIGINT | NOT NULL, UNIQUE, FK → milestones(id) |
+| raised_by_user_id | BIGINT | NOT NULL, FK → users(id) |
+| reason | TEXT | NOT NULL |
+| status | VARCHAR(20) | NOT NULL — `OPEN`, `RESOLVED` |
+| resolution | VARCHAR(30) | NULL — `FREELANCER_WINS`, `CLIENT_WINS` |
+| resolved_by_admin_id | BIGINT | NULL, FK → users(id) |
+| admin_note | TEXT | NULL |
+| created_at | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| resolved_at | TIMESTAMP | NULL |
+
+**Notes**
+
+- Raising a dispute does **not** move money — escrow hold stays `HELD`.
+- Admin resolve: `FREELANCER_WINS` → release to freelancer; `CLIENT_WINS` → refund client.
+- Client or assigned freelancer may raise a dispute while milestone is `SUBMITTED`.
 
 ---
 

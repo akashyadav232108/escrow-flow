@@ -295,9 +295,9 @@ Client approves submitted work; releases funds to freelancer.
 
 ### POST `/milestones/{id}/dispute`
 
-Client disputes submitted work; refunds locked funds.
+Client or assigned freelancer disputes submitted work. **Funds stay frozen** in escrow (`HELD`); milestone becomes `DISPUTED`. An admin must resolve it.
 
-**Request** (optional)
+**Request**
 
 ```json
 {
@@ -305,7 +305,17 @@ Client disputes submitted work; refunds locked funds.
 }
 ```
 
-**Response** `200` — milestone `DISPUTED` or `REFUNDED`, hold `REFUNDED`.
+`reason` is required.
+
+**Response** `200`
+
+```json
+{
+  "milestoneId": 1,
+  "status": "DISPUTED",
+  "escrowHoldStatus": "HELD"
+}
+```
 
 ---
 
@@ -377,11 +387,47 @@ Platform stats for the admin dashboard.
   "completedProjects": 10,
   "cancelledProjects": 1,
   "totalEscrowHeld": 125000.0000,
-  "disputedMilestones": 0
+  "disputedMilestones": 3
 }
 ```
 
-`disputedMilestones` will become meaningful after dispute arbitration (funds freeze → admin resolve) is enabled.
+`disputedMilestones` = count of **open** disputes.
+
+---
+
+### GET `/admin/disputes`
+
+List disputes. Optional filter: `?status=OPEN` or `?status=RESOLVED`.
+
+**Response** `200` — array of dispute objects (see resolve response shape).
+
+---
+
+### GET `/admin/disputes/{id}`
+
+Dispute detail including project parties, submitted work note, and escrow status.
+
+---
+
+### POST `/admin/disputes/{id}/resolve`
+
+Admin decides the dispute. Money moves only here:
+
+| `decision` | Effect |
+|------------|--------|
+| `FREELANCER_WINS` | Escrow released to freelancer; milestone `APPROVED` |
+| `CLIENT_WINS` | Escrow refunded to client; milestone `REFUNDED` |
+
+**Request**
+
+```json
+{
+  "decision": "FREELANCER_WINS",
+  "note": "Deliverable matches the milestone scope"
+}
+```
+
+**Response** `200` — updated dispute object with `status: RESOLVED` and resolution fields set.
 
 ---
 
@@ -429,7 +475,10 @@ Common error codes:
 | 11 | POST | `/milestones/{id}/lock-funds` | Client |
 | 12 | POST | `/milestones/{id}/submit` | Freelancer |
 | 13 | POST | `/milestones/{id}/approve` | Client |
-| 14 | POST | `/milestones/{id}/dispute` | Client |
+| 14 | POST | `/milestones/{id}/dispute` | Client / Freelancer |
 | 15 | POST | `/admin/admins` | Super admin |
 | 16 | GET | `/admin/admins` | Admin |
 | 17 | GET | `/admin/dashboard` | Admin |
+| 18 | GET | `/admin/disputes` | Admin |
+| 19 | GET | `/admin/disputes/{id}` | Admin |
+| 20 | POST | `/admin/disputes/{id}/resolve` | Admin |

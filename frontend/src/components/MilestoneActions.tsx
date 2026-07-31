@@ -87,11 +87,15 @@ export default function MilestoneActions({
   };
 
   const handleDispute = async () => {
+    if (!disputeReason.trim()) {
+      setError('Please provide a reason for the dispute.');
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
       await dispatch(
-        disputeMilestone({ milestoneId: milestone.id, reason: disputeReason.trim() || undefined }),
+        disputeMilestone({ milestoneId: milestone.id, reason: disputeReason.trim() }),
       ).unwrap();
       setDisputeReason('');
       setShowDisputeForm(false);
@@ -167,14 +171,26 @@ export default function MilestoneActions({
         </>
       )}
 
-      {isClient && showDisputeForm && (
+      {isFreelancer && milestone.status === 'SUBMITTED' && !showDisputeForm && (
+        <button
+          type="button"
+          className="btn-danger-outline btn-sm"
+          disabled={busy}
+          onClick={() => setShowDisputeForm(true)}
+        >
+          Dispute
+        </button>
+      )}
+
+      {(isClient || isFreelancer) && showDisputeForm && (
         <div className="inline-action-form">
           <textarea
             value={disputeReason}
             onChange={(e) => setDisputeReason(e.target.value)}
-            placeholder="Reason for dispute (optional)"
+            placeholder="Reason for dispute (required)"
             rows={2}
             autoFocus
+            required
           />
           <div className="inline-action-buttons">
             <button type="button" className="btn-danger-outline" disabled={busy} onClick={handleDispute}>
@@ -194,6 +210,10 @@ export default function MilestoneActions({
             </button>
           </div>
         </div>
+      )}
+
+      {milestone.status === 'DISPUTED' && (
+        <p className="muted-text">Under admin review — funds remain in escrow until resolved.</p>
       )}
 
       {error && <p className="error-text">{error}</p>}
