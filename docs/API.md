@@ -35,6 +35,15 @@ Create user and wallet with starting balance.
 
 `role`: `CLIENT` | `FREELANCER` | `BOTH`
 
+Admin roles (`ADMIN`, `SUPER_ADMIN`) **cannot** be self-registered here — they are provisioned separately.
+
+**Errors**
+
+| Status | When |
+|--------|------|
+| 400 | `role` is `ADMIN` or `SUPER_ADMIN` |
+| 409 | Email already registered |
+
 **Response** `201`
 
 ```json
@@ -300,6 +309,82 @@ Client disputes submitted work; refunds locked funds.
 
 ---
 
+## Admin
+
+Admin routes require `Authorization: Bearer <jwt>` and role `ADMIN` or `SUPER_ADMIN`.
+Non-admins receive `403 FORBIDDEN`. Admins have **no wallet** — `/wallet` endpoints return 403 for admin roles.
+
+### POST `/admin/admins`
+
+Create a new `ADMIN` account. **Super admin only.** No wallet is created. `createdBy` is set to the current super admin.
+
+**Request**
+
+```json
+{
+  "name": "Ops Admin",
+  "email": "admin@example.com",
+  "password": "securePassword123"
+}
+```
+
+**Response** `201`
+
+```json
+{
+  "id": 2,
+  "name": "Ops Admin",
+  "email": "admin@example.com",
+  "role": "ADMIN",
+  "createdAt": "2026-07-31T12:00:00Z",
+  "createdById": 1,
+  "createdByName": "Super Admin"
+}
+```
+
+**Errors**
+
+| Status | When |
+|--------|------|
+| 403 | Caller is not `SUPER_ADMIN` |
+| 409 | Email already registered |
+
+---
+
+### GET `/admin/admins`
+
+List all `ADMIN` and `SUPER_ADMIN` users (includes who created each).
+
+**Response** `200` — array of admin user objects (same shape as create response).
+
+---
+
+### GET `/admin/dashboard`
+
+Platform stats for the admin dashboard.
+
+**Response** `200`
+
+```json
+{
+  "totalUsers": 42,
+  "clients": 20,
+  "freelancers": 15,
+  "both": 5,
+  "admins": 2,
+  "openProjects": 8,
+  "inProgressProjects": 12,
+  "completedProjects": 10,
+  "cancelledProjects": 1,
+  "totalEscrowHeld": 125000.0000,
+  "disputedMilestones": 0
+}
+```
+
+`disputedMilestones` will become meaningful after dispute arbitration (funds freeze → admin resolve) is enabled.
+
+---
+
 ## Error format
 
 ```json
@@ -345,3 +430,6 @@ Common error codes:
 | 12 | POST | `/milestones/{id}/submit` | Freelancer |
 | 13 | POST | `/milestones/{id}/approve` | Client |
 | 14 | POST | `/milestones/{id}/dispute` | Client |
+| 15 | POST | `/admin/admins` | Super admin |
+| 16 | GET | `/admin/admins` | Admin |
+| 17 | GET | `/admin/dashboard` | Admin |
