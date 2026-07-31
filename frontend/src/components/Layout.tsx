@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import BackButton from './BackButton';
+import NotificationBell from './NotificationBell';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { logout } from '../store/slices/authSlice';
 import { isAdminRole, isSuperAdminRole } from '../utils/roles';
@@ -13,8 +14,17 @@ export default function Layout() {
   const navigate = useNavigate();
   const user = useAppSelector((state) => state.auth.user);
   const [navOpen, setNavOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const admin = isAdminRole(user?.role);
   const superAdmin = isSuperAdminRole(user?.role);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
 
   const closeNav = () => setNavOpen(false);
 
@@ -33,25 +43,35 @@ export default function Layout() {
           <span className="auth-brand-mark">E</span>
           Escrow Flow
         </div>
-        <button
-          type="button"
-          className="hamburger-btn"
-          aria-label={navOpen ? 'Close navigation' : 'Open navigation'}
-          aria-expanded={navOpen}
-          onClick={() => setNavOpen((prev) => !prev)}
-        >
-          <span />
-          <span />
-          <span />
-        </button>
+        <div className="mobile-topbar-actions">
+          {isMobile && <NotificationBell />}
+          <button
+            type="button"
+            className="hamburger-btn"
+            aria-label={navOpen ? 'Close navigation' : 'Open navigation'}
+            aria-expanded={navOpen}
+            onClick={() => setNavOpen((prev) => !prev)}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+        </div>
       </header>
 
       {navOpen && <div className="sidebar-backdrop" onClick={closeNav} />}
 
       <aside className={`sidebar${navOpen ? ' sidebar-open' : ''}`}>
-        <div className="sidebar-brand">
-          <span className="auth-brand-mark">E</span>
-          Escrow Flow
+        <div className="sidebar-brand-row">
+          <div className="sidebar-brand">
+            <span className="auth-brand-mark">E</span>
+            Escrow Flow
+          </div>
+          {!isMobile && (
+            <div className="sidebar-bell-desktop">
+              <NotificationBell />
+            </div>
+          )}
         </div>
         <nav className="sidebar-nav">
           {admin ? (

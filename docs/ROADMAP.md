@@ -120,7 +120,8 @@
 
 - [ ] JWT logout blacklist in Redis
 - [ ] File upload for milestone deliverables (S3)
-- [ ] Admin dispute resolution panel
+- [x] Admin dispute resolution panel
+- [x] In-app notifications (MySQL rows + poll; no Kafka)
 - [ ] Email notifications on submit/approve
 - [ ] GitHub Actions CI (build + test on PR)
 - [ ] OpenAPI / Swagger UI for API docs

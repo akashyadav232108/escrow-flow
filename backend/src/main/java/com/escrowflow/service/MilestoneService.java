@@ -55,8 +55,8 @@ public class MilestoneService {
                 "Work submitted",
                 "Freelancer submitted work for milestone \"" + milestone.getTitle()
                         + "\" on project \"" + project.getTitle() + "\".",
-                NotificationReferenceType.MILESTONE,
-                milestone.getId());
+                NotificationReferenceType.PROJECT,
+                project.getId());
 
         log.info("Work submitted: milestoneId={} freelancerId={}", milestoneId, freelancerUserId);
     }

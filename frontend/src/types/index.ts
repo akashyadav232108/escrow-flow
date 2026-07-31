@@ -168,3 +168,34 @@ export interface DisputeDetail {
   resolvedAt: string | null;
 }
 
+export type NotificationType =
+  | 'PROJECT_CREATED'
+  | 'WORK_SUBMITTED'
+  | 'DISPUTE_RAISED'
+  | 'DISPUTE_RESOLVED';
+
+export type NotificationReferenceType = 'PROJECT' | 'MILESTONE' | 'DISPUTE';
+
+export interface NotificationItem {
+  id: number;
+  type: NotificationType;
+  title: string;
+  message: string;
+  referenceType: NotificationReferenceType | null;
+  referenceId: number | null;
+  read: boolean;
+  createdAt: string;
+}
+
+export interface NotificationPage {
+  content: NotificationItem[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+export interface UnreadCountResponse {
+  unreadCount: number;
+}
+

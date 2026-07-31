@@ -238,6 +238,7 @@ Disable action buttons while request in flight — prevents double-click (idempo
 - [ ] Project detail + milestone badges
 - [ ] MilestoneActions (lock, submit, approve, dispute)
 - [ ] Wallet page + transaction history
+- [ ] In-app notification bell (poll unread count, mark read, navigate)
 - [ ] Idempotency key on lock funds
 - [ ] Refetch wallet after escrow actions
 - [ ] Basic responsive layout

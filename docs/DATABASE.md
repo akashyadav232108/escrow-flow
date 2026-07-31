@@ -14,6 +14,8 @@ users ─────┬──── wallets
            │                   ├── escrow_holds (1:1 per milestone)
            │                   └── disputes (1:1 per milestone, when raised)
            │
+           ├──── notifications
+           │
            └── wallet_transactions (via wallet_id)
 ```
 
@@ -150,6 +152,37 @@ users ─────┬──── wallets
 
 ---
 
+### notifications
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | BIGINT | PK, AUTO_INCREMENT |
+| user_id | BIGINT | NOT NULL, FK → users(id) |
+| type | VARCHAR(40) NOT NULL — see enum below |
+| title | VARCHAR(255) | NOT NULL |
+| message | TEXT | NOT NULL |
+| reference_type | VARCHAR(30) | NULL — `PROJECT`, `MILESTONE`, `DISPUTE` |
+| reference_id | BIGINT | NULL — id of the referenced entity |
+| is_read | BOOLEAN | NOT NULL, DEFAULT FALSE |
+| created_at | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+
+**type values**
+
+| Value | When |
+|-------|------|
+| `PROJECT_CREATED` | Client creates an open project (fan-out to freelancers) |
+| `WORK_SUBMITTED` | Freelancer submits milestone work (notify client) |
+| `DISPUTE_RAISED` | Dispute raised (notify other party + admins) |
+| `DISPUTE_RESOLVED` | Admin resolves dispute (notify client + freelancer) |
+
+**Notes**
+
+- Rows are inserted inside the same `@Transactional` business flow (no message broker).
+- Recipients only see their own notifications via `/api/notifications`.
+- Index: `(user_id, is_read, created_at DESC)`.
+
+---
+
 ### escrow_holds
 
 | Column | Type | Constraints |
@@ -207,6 +240,7 @@ CREATE INDEX idx_projects_client ON projects(client_id);
 CREATE INDEX idx_projects_freelancer ON projects(freelancer_id);
 CREATE INDEX idx_milestones_project ON milestones(project_id);
 CREATE INDEX idx_wallet_txn_wallet ON wallet_transactions(wallet_id, created_at DESC);
+CREATE INDEX idx_notifications_user_unread ON notifications(user_id, is_read, created_at DESC);
 ```
 
 ---

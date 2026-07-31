@@ -184,6 +184,8 @@ Client creates a project with milestones.
 
 **Response** `201` — project with nested milestones (all `PENDING`).
 
+Also creates `PROJECT_CREATED` notifications for active freelancers (`FREELANCER` / `BOTH`), capped for demo fan-out.
+
 ---
 
 ### GET `/projects`
@@ -276,6 +278,8 @@ Freelancer submits work.
 
 **Response** `200` — milestone with `status: SUBMITTED`.
 
+Also creates an in-app notification for the project client (`WORK_SUBMITTED`).
+
 ---
 
 ### POST `/milestones/{id}/approve`
@@ -317,6 +321,8 @@ Client or assigned freelancer disputes submitted work. **Funds stay frozen** in 
   "escrowHoldStatus": "HELD"
 }
 ```
+
+Also notifies the other party and admins (`DISPUTE_RAISED`).
 
 ---
 
@@ -432,6 +438,8 @@ Admin decides the dispute. Money moves only here:
 
 **Response** `200` — updated dispute object with `status: RESOLVED` and resolution fields set.
 
+Also notifies the project client and freelancer (`DISPUTE_RESOLVED`).
+
 ---
 
 ### GET `/admin/users`
@@ -482,6 +490,72 @@ Soft-delete account (`DELETED` + `deletedAt`). Blocked if the user has open disp
 ```json
 {
   "reason": "Repeated policy violations after warnings"
+}
+```
+
+---
+
+## Notifications
+
+In-app notifications for the authenticated user. Rows are written in the same DB transaction as the business action (no Kafka). Admins may receive dispute alerts even though they have no wallet.
+
+### GET `/notifications`
+
+Paginated list for the current user (newest first).
+
+**Query params**: `page` (default 0), `size` (default 20)
+
+**Response** `200`
+
+```json
+{
+  "content": [
+    {
+      "id": 1,
+      "type": "WORK_SUBMITTED",
+      "title": "Work submitted",
+      "message": "Freelancer submitted work for milestone \"Wireframes\" on project \"Website redesign\".",
+      "referenceType": "PROJECT",
+      "referenceId": 12,
+      "read": false,
+      "createdAt": "2026-07-31T12:00:00Z"
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 1,
+  "totalPages": 1
+}
+```
+
+`type`: `PROJECT_CREATED` | `WORK_SUBMITTED` | `DISPUTE_RAISED` | `DISPUTE_RESOLVED`  
+`referenceType`: `PROJECT` | `MILESTONE` | `DISPUTE` (nullable)
+
+### GET `/notifications/unread-count`
+
+**Response** `200`
+
+```json
+{
+  "unreadCount": 3
+}
+```
+
+### POST `/notifications/{id}/read`
+
+Mark one notification as read. Only the recipient may update their own row (`404` if missing or not owned).
+
+**Response** `200` — updated `NotificationResponse`.
+
+### POST `/notifications/read-all`
+
+Mark all of the current user's unread notifications as read.
+
+**Response** `200`
+
+```json
+{
+  "unreadCount": 0
 }
 ```
 
@@ -546,3 +620,7 @@ Common error codes:
 | 24 | POST | `/admin/users/{id}/suspend` | Admin |
 | 25 | POST | `/admin/users/{id}/unsuspend` | Admin |
 | 26 | POST | `/admin/users/{id}/delete` | Admin |
+| 27 | GET | `/notifications` | Auth |
+| 28 | GET | `/notifications/unread-count` | Auth |
+| 29 | POST | `/notifications/{id}/read` | Auth |
+| 30 | POST | `/notifications/read-all` | Auth |
