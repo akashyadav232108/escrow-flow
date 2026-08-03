@@ -122,6 +122,7 @@
 - [ ] File upload for milestone deliverables (S3)
 - [x] Admin dispute resolution panel
 - [x] In-app notifications (MySQL rows + poll; no Kafka)
+- [x] Project applications (apply / client accept-decline; Phase A hiring)
 - [ ] Email notifications on submit/approve
 - [ ] GitHub Actions CI (build + test on PR)
 - [ ] OpenAPI / Swagger UI for API docs

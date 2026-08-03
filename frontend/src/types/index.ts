@@ -232,3 +232,21 @@ export interface CreateReviewInput {
   comment?: string;
 }
 
+export type ApplicationStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'WITHDRAWN';
+
+export interface ProjectApplication {
+  id: number;
+  projectId: number;
+  projectTitle: string;
+  freelancerId: number;
+  freelancerName: string;
+  status: ApplicationStatus;
+  message: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApplyToProjectInput {
+  message?: string;
+}
+
