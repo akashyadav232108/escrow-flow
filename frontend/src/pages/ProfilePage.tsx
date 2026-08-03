@@ -1,7 +1,10 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
+import FreelancerRating from '../components/FreelancerRating';
 import PasswordInput from '../components/PasswordInput';
+import { reviewApi } from '../api/reviewApi';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { changePassword } from '../store/slices/authSlice';
+import type { Review } from '../types';
 import { extractApiErrorMessage } from '../utils/errors';
 
 export default function ProfilePage() {
@@ -14,6 +17,30 @@ export default function ProfilePage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+
+  const showsRatings = user?.role === 'FREELANCER' || user?.role === 'BOTH';
+
+  useEffect(() => {
+    if (!user || !showsRatings) return;
+    let cancelled = false;
+    setReviewsLoading(true);
+    void reviewApi
+      .listForUser(user.id, 0, 10)
+      .then((page) => {
+        if (!cancelled) setReviews(page.content);
+      })
+      .catch(() => {
+        if (!cancelled) setReviews([]);
+      })
+      .finally(() => {
+        if (!cancelled) setReviewsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, showsRatings]);
 
   if (!user) {
     return null;
@@ -65,8 +92,39 @@ export default function ProfilePage() {
             <span className="status-badge status-open">{user.role}</span>
             {memberSince && <span className="profile-member-since">Member since {memberSince}</span>}
           </div>
+          {showsRatings && (
+            <div className="profile-rating">
+              <FreelancerRating freelancerId={user.id} />
+            </div>
+          )}
         </div>
       </section>
+
+      {showsRatings && (
+        <section className="profile-section">
+          <h2>Recent reviews</h2>
+          {reviewsLoading && <p className="muted-text">Loading…</p>}
+          {!reviewsLoading && reviews.length === 0 && (
+            <p className="empty-state">No reviews yet.</p>
+          )}
+          {!reviewsLoading && reviews.length > 0 && (
+            <ul className="review-list">
+              {reviews.map((review) => (
+                <li key={review.id} className="review-list-item">
+                  <div className="review-stars-display" aria-label={`${review.rating} out of 5 stars`}>
+                    {'★'.repeat(review.rating)}
+                    <span className="review-stars-empty">{'★'.repeat(5 - review.rating)}</span>
+                  </div>
+                  {review.comment && <p className="review-comment">{review.comment}</p>}
+                  <p className="muted-text review-meta">
+                    {review.reviewerName} · {new Date(review.createdAt).toLocaleDateString()}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       <section className="profile-section">
         <h2>Change password</h2>

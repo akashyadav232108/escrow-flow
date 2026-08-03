@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import FreelancerRating from '../components/FreelancerRating';
 import MilestoneList from '../components/MilestoneList';
+import ProjectReviewSection from '../components/ProjectReviewSection';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { acceptProject, fetchProjectById } from '../store/slices/projectsSlice';
 import { extractApiErrorMessage } from '../utils/errors';
@@ -12,6 +14,7 @@ export default function ProjectDetailPage() {
   const user = useAppSelector((state) => state.auth.user);
   const [accepting, setAccepting] = useState(false);
   const [acceptError, setAcceptError] = useState<string | null>(null);
+  const [ratingRefreshKey, setRatingRefreshKey] = useState(0);
 
   useEffect(() => {
     if (id) {
@@ -61,8 +64,26 @@ export default function ProjectDetailPage() {
       {selectedProject.description && <p className="project-description">{selectedProject.description}</p>}
       <div className="project-meta">
         <span>Client: {selectedProject.client?.name}</span>
-        <span>Freelancer: {selectedProject.freelancer?.name ?? 'Unassigned'}</span>
+        <span className="project-meta-freelancer">
+          Freelancer: {selectedProject.freelancer?.name ?? 'Unassigned'}
+          {selectedProject.freelancer && (
+            <FreelancerRating
+              freelancerId={selectedProject.freelancer.id}
+              refreshKey={ratingRefreshKey}
+            />
+          )}
+        </span>
       </div>
+      {selectedProject.freelancer && (
+        <ProjectReviewSection
+          projectId={selectedProject.id}
+          freelancerId={selectedProject.freelancer.id}
+          freelancerName={selectedProject.freelancer.name}
+          milestones={selectedProject.milestones ?? []}
+          isClient={isClient}
+          onReviewCreated={() => setRatingRefreshKey((k) => k + 1)}
+        />
+      )}
       <MilestoneList
         milestones={selectedProject.milestones ?? []}
         projectId={selectedProject.id}

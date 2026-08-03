@@ -716,6 +716,137 @@
   font-size: 0.9rem;
 }
 
+.project-meta-freelancer {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.project-card-freelancer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.freelancer-rating {
+  color: var(--color-warning);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.freelancer-rating-compact {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.rating-empty {
+  font-size: 0.85rem;
+}
+
+.review-section {
+  margin-bottom: 1.75rem;
+  padding: 1.25rem 1.5rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+}
+
+.review-section h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+}
+
+.review-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 0.75rem;
+}
+
+.review-form > label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.review-form textarea {
+  width: 100%;
+  resize: vertical;
+  font: inherit;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-alt, var(--color-surface));
+}
+
+.review-form > .btn-primary {
+  align-self: flex-start;
+}
+
+.review-star-picker {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.review-star-btn {
+  border: none;
+  background: transparent;
+  padding: 0.15rem;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--color-border);
+  cursor: pointer;
+}
+
+.review-star-btn-active {
+  color: var(--color-warning);
+}
+
+.review-stars-display {
+  color: var(--color-warning);
+  letter-spacing: 0.05em;
+  font-size: 1.1rem;
+}
+
+.review-stars-empty {
+  color: var(--color-border);
+}
+
+.review-comment {
+  margin: 0.5rem 0 0;
+  font-size: 0.92rem;
+}
+
+.review-meta {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+}
+
+.review-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.review-list-item {
+  padding: 0.85rem 1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.profile-rating {
+  margin-top: 0.5rem;
+}
+
 .milestone-list {
   list-style: none;
   padding: 0;

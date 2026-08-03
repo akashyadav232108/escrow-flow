@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import FreelancerRating from './FreelancerRating';
 import type { Project } from '../types';
 
 export default function ProjectCard({ project }: { project: Project }) {
@@ -11,6 +12,12 @@ export default function ProjectCard({ project }: { project: Project }) {
       <p>
         {milestoneCount} milestone{milestoneCount === 1 ? '' : 's'}
       </p>
+      {project.freelancer && (
+        <p className="project-card-freelancer">
+          {project.freelancer.name}{' '}
+          <FreelancerRating freelancerId={project.freelancer.id} compact />
+        </p>
+      )}
     </Link>
   );
 }

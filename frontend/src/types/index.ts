@@ -200,3 +200,32 @@ export interface UnreadCountResponse {
   unreadCount: number;
 }
 
+export interface Review {
+  id: number;
+  projectId: number;
+  reviewerId: number;
+  reviewerName: string;
+  freelancerId: number;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+}
+
+export interface ReviewPage {
+  content: Review[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+export interface RatingSummary {
+  averageRating: number;
+  reviewCount: number;
+}
+
+export interface CreateReviewInput {
+  rating: number;
+  comment?: string;
+}
+
