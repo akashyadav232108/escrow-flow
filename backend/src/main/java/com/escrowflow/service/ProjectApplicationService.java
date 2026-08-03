@@ -10,6 +10,8 @@ import com.escrowflow.repository.ProjectApplicationRepository;
 import com.escrowflow.repository.ProjectRepository;
 import com.escrowflow.repository.UserRepository;
 import com.escrowflow.security.SecurityUtils;
+import com.escrowflow.web.dto.ApplicationResponse;
+import com.escrowflow.web.dto.ApplyToProjectRequest;
 import com.escrowflow.web.exception.ForbiddenException;
 import com.escrowflow.web.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +24,7 @@ import java.util.List;
 
 /**
  * Phase A hiring: freelancers apply to OPEN projects; client accepts one or declines.
- * Controllers / DTOs / replacing instant {@code ProjectService.accept} come in a later step.
+ * Instant {@code ProjectService.accept} remains until a later step retires it.
  */
 @Service
 @Slf4j
@@ -45,7 +47,7 @@ public class ProjectApplicationService {
     }
 
     @Transactional
-    public ProjectApplication apply(Long projectId, String message) {
+    public ApplicationResponse apply(Long projectId, ApplyToProjectRequest request) {
         rejectAdminAccess();
         Long freelancerId = SecurityUtils.getCurrentUserId();
         requireFreelancerRole();
@@ -58,6 +60,7 @@ public class ProjectApplicationService {
         User freelancer = userRepository.findById(freelancerId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
+        String message = request == null ? null : request.message();
         Instant now = Instant.now();
         ProjectApplication application = applicationRepository.save(ProjectApplication.builder()
                 .project(project)
@@ -73,11 +76,11 @@ public class ProjectApplicationService {
                 application.getId(),
                 projectId,
                 freelancerId);
-        return application;
+        return toResponse(application);
     }
 
     @Transactional
-    public ProjectApplication accept(Long applicationId) {
+    public ApplicationResponse accept(Long applicationId) {
         rejectAdminAccess();
         Long clientId = SecurityUtils.getCurrentUserId();
 
@@ -106,11 +109,11 @@ public class ProjectApplicationService {
                 project.getId(),
                 application.getFreelancer().getId(),
                 declined);
-        return application;
+        return toResponse(application);
     }
 
     @Transactional
-    public ProjectApplication decline(Long applicationId) {
+    public ApplicationResponse decline(Long applicationId) {
         rejectAdminAccess();
         Long clientId = SecurityUtils.getCurrentUserId();
 
@@ -128,11 +131,11 @@ public class ProjectApplicationService {
         ProjectApplication saved = applicationRepository.save(application);
 
         log.info("Application declined: id={} projectId={}", applicationId, saved.getProject().getId());
-        return saved;
+        return toResponse(saved);
     }
 
     @Transactional
-    public ProjectApplication withdraw(Long applicationId) {
+    public ApplicationResponse withdraw(Long applicationId) {
         rejectAdminAccess();
         Long freelancerId = SecurityUtils.getCurrentUserId();
 
@@ -152,11 +155,11 @@ public class ProjectApplicationService {
         ProjectApplication saved = applicationRepository.save(application);
 
         log.info("Application withdrawn: id={} projectId={}", applicationId, saved.getProject().getId());
-        return saved;
+        return toResponse(saved);
     }
 
     @Transactional(readOnly = true)
-    public List<ProjectApplication> listForProject(Long projectId) {
+    public List<ApplicationResponse> listForProject(Long projectId) {
         Long userId = SecurityUtils.getCurrentUserId();
         Project project = projectRepository.findByIdWithDetails(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
@@ -165,17 +168,21 @@ public class ProjectApplicationService {
         boolean isAssignedFreelancer = project.getFreelancer() != null
                 && project.getFreelancer().getId().equals(userId);
         if (!isClient && !isAssignedFreelancer) {
-            // Applicants may see their own via listMine; project-wide list is client (or assigned) only.
             throw new ForbiddenException("Only the project client can list applications");
         }
 
-        return applicationRepository.findByProjectIdOrderByCreatedAtAsc(projectId);
+        return applicationRepository.findByProjectIdOrderByCreatedAtAsc(projectId).stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<ProjectApplication> listMine() {
-        return applicationRepository.findByFreelancerIdOrderByCreatedAtDesc(
-                SecurityUtils.getCurrentUserId());
+    public List<ApplicationResponse> listMine() {
+        return applicationRepository
+                .findByFreelancerIdOrderByCreatedAtDesc(SecurityUtils.getCurrentUserId())
+                .stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     void assertCanApply(Project project, Long freelancerId) {
@@ -223,6 +230,20 @@ public class ProjectApplicationService {
         if (SecurityUtils.getCurrentRole().isAdminRole()) {
             throw new ForbiddenException("Admins cannot manage project applications");
         }
+    }
+
+    private ApplicationResponse toResponse(ProjectApplication application) {
+        return new ApplicationResponse(
+                application.getId(),
+                application.getProject().getId(),
+                application.getProject().getTitle(),
+                application.getFreelancer().getId(),
+                application.getFreelancer().getName(),
+                application.getStatus(),
+                application.getMessage(),
+                application.getCreatedAt(),
+                application.getUpdatedAt()
+        );
     }
 
     private static String blankToNull(String message) {
