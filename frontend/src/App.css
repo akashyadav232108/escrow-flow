@@ -14,6 +14,7 @@
   position: sticky;
   top: 0;
   height: 100vh;
+  overflow: visible;
 }
 
 .sidebar-brand {
@@ -25,6 +26,7 @@
   color: var(--color-text);
   padding: 0 0.5rem;
   margin-bottom: 2rem;
+  min-width: 0;
 }
 
 .sidebar-brand-row {
@@ -33,15 +35,20 @@
   justify-content: space-between;
   gap: 0.5rem;
   margin-bottom: 2rem;
+  min-width: 0;
 }
 
 .sidebar-brand-row .sidebar-brand {
   margin-bottom: 0;
+  flex: 1;
+  min-width: 0;
 }
 
 .sidebar-bell-desktop {
   padding-top: 0.15rem;
   flex-shrink: 0;
+  position: relative;
+  z-index: 60;
 }
 
 .sidebar-nav {
@@ -1044,8 +1051,9 @@
   position: absolute;
   top: calc(100% + 0.45rem);
   right: 0;
+  left: auto;
   width: min(22rem, calc(100vw - 2rem));
-  max-height: 24rem;
+  max-height: min(24rem, calc(100vh - 5rem));
   display: flex;
   flex-direction: column;
   background: var(--color-surface);
@@ -1054,6 +1062,20 @@
   box-shadow: var(--shadow-soft);
   z-index: 60;
   overflow: hidden;
+}
+
+/* Desktop sidebar: open into the main content (right), not off-screen left */
+.sidebar-bell-desktop .notification-panel {
+  left: 0;
+  right: auto;
+  width: min(22rem, calc(100vw - 3rem));
+}
+
+/* Mobile topbar: keep right-aligned under the bell */
+.mobile-topbar .notification-panel {
+  right: 0;
+  left: auto;
+  width: min(22rem, calc(100vw - 1.5rem));
 }
 
 .notification-panel-header {

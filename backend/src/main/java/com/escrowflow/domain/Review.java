@@ -46,7 +46,7 @@ public class Review {
     @JoinColumn(name = "freelancer_id", nullable = false)
     private User freelancer;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TINYINT")
     private Integer rating;
 
     @Column(columnDefinition = "TEXT")
