@@ -5,6 +5,8 @@ import com.escrowflow.domain.Project;
 import com.escrowflow.domain.Review;
 import com.escrowflow.domain.User;
 import com.escrowflow.domain.enums.MilestoneStatus;
+import com.escrowflow.domain.enums.NotificationReferenceType;
+import com.escrowflow.domain.enums.NotificationType;
 import com.escrowflow.repository.ProjectRepository;
 import com.escrowflow.repository.ReviewRepository;
 import com.escrowflow.repository.UserRepository;
@@ -36,14 +38,17 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public ReviewService(
             ReviewRepository reviewRepository,
             ProjectRepository projectRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            NotificationService notificationService) {
         this.reviewRepository = reviewRepository;
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -67,6 +72,15 @@ public class ReviewService {
                 .createdAt(now)
                 .updatedAt(now)
                 .build());
+
+        notificationService.notify(
+                project.getFreelancer().getId(),
+                NotificationType.REVIEW_RECEIVED,
+                "New review received",
+                "You received a " + rating + "-star review on project \""
+                        + project.getTitle() + "\".",
+                NotificationReferenceType.PROJECT,
+                project.getId());
 
         log.info(
                 "Review created: id={} projectId={} freelancerId={} rating={}",

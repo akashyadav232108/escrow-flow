@@ -172,7 +172,8 @@ export type NotificationType =
   | 'PROJECT_CREATED'
   | 'WORK_SUBMITTED'
   | 'DISPUTE_RAISED'
-  | 'DISPUTE_RESOLVED';
+  | 'DISPUTE_RESOLVED'
+  | 'REVIEW_RECEIVED';
 
 export type NotificationReferenceType = 'PROJECT' | 'MILESTONE' | 'DISPUTE';
 

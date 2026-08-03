@@ -174,6 +174,7 @@ users ─────┬──── wallets
 | `WORK_SUBMITTED` | Freelancer submits milestone work (notify client) |
 | `DISPUTE_RAISED` | Dispute raised (notify other party + admins) |
 | `DISPUTE_RESOLVED` | Admin resolves dispute (notify client + freelancer) |
+| `REVIEW_RECEIVED` | Client leaves a review (notify freelancer; `referenceType` = `PROJECT`) |
 
 **Notes**
 

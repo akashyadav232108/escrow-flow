@@ -528,7 +528,7 @@ Paginated list for the current user (newest first).
 }
 ```
 
-`type`: `PROJECT_CREATED` | `WORK_SUBMITTED` | `DISPUTE_RAISED` | `DISPUTE_RESOLVED`  
+`type`: `PROJECT_CREATED` | `WORK_SUBMITTED` | `DISPUTE_RAISED` | `DISPUTE_RESOLVED` | `REVIEW_RECEIVED`  
 `referenceType`: `PROJECT` | `MILESTONE` | `DISPUTE` (nullable)
 
 ### GET `/notifications/unread-count`
