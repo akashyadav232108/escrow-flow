@@ -173,7 +173,10 @@ export type NotificationType =
   | 'WORK_SUBMITTED'
   | 'DISPUTE_RAISED'
   | 'DISPUTE_RESOLVED'
-  | 'REVIEW_RECEIVED';
+  | 'REVIEW_RECEIVED'
+  | 'APPLICATION_RECEIVED'
+  | 'APPLICATION_ACCEPTED'
+  | 'APPLICATION_DECLINED';
 
 export type NotificationReferenceType = 'PROJECT' | 'MILESTONE' | 'DISPUTE';
 

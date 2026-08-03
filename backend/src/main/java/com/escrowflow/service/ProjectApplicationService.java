@@ -4,6 +4,8 @@ import com.escrowflow.domain.Project;
 import com.escrowflow.domain.ProjectApplication;
 import com.escrowflow.domain.User;
 import com.escrowflow.domain.enums.ApplicationStatus;
+import com.escrowflow.domain.enums.NotificationReferenceType;
+import com.escrowflow.domain.enums.NotificationType;
 import com.escrowflow.domain.enums.ProjectStatus;
 import com.escrowflow.domain.enums.UserRole;
 import com.escrowflow.repository.ProjectApplicationRepository;
@@ -36,14 +38,17 @@ public class ProjectApplicationService {
     private final ProjectApplicationRepository applicationRepository;
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public ProjectApplicationService(
             ProjectApplicationRepository applicationRepository,
             ProjectRepository projectRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            NotificationService notificationService) {
         this.applicationRepository = applicationRepository;
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -76,6 +81,15 @@ public class ProjectApplicationService {
                 application.getId(),
                 projectId,
                 freelancerId);
+
+        notificationService.notify(
+                project.getClient().getId(),
+                NotificationType.APPLICATION_RECEIVED,
+                "New project application",
+                freelancer.getName() + " applied to \"" + project.getTitle() + "\".",
+                NotificationReferenceType.PROJECT,
+                project.getId());
+
         return toResponse(application);
     }
 
@@ -109,6 +123,15 @@ public class ProjectApplicationService {
                 project.getId(),
                 application.getFreelancer().getId(),
                 declined);
+
+        notificationService.notify(
+                application.getFreelancer().getId(),
+                NotificationType.APPLICATION_ACCEPTED,
+                "Application accepted",
+                "Your application for \"" + project.getTitle() + "\" was accepted.",
+                NotificationReferenceType.PROJECT,
+                project.getId());
+
         return toResponse(application);
     }
 
@@ -131,6 +154,15 @@ public class ProjectApplicationService {
         ProjectApplication saved = applicationRepository.save(application);
 
         log.info("Application declined: id={} projectId={}", applicationId, saved.getProject().getId());
+
+        notificationService.notify(
+                saved.getFreelancer().getId(),
+                NotificationType.APPLICATION_DECLINED,
+                "Application declined",
+                "Your application for \"" + saved.getProject().getTitle() + "\" was declined.",
+                NotificationReferenceType.PROJECT,
+                saved.getProject().getId());
+
         return toResponse(saved);
     }
 

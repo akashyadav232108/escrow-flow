@@ -9,10 +9,14 @@ users ─────┬──── wallets
            │
            ├──── projects (client_id, freelancer_id)
            │         │
-           │         └── milestones
-           │                   │
-           │                   ├── escrow_holds (1:1 per milestone)
-           │                   └── disputes (1:1 per milestone, when raised)
+           │         ├── milestones
+           │         │         │
+           │         │         ├── escrow_holds (1:1 per milestone)
+           │         │         └── disputes (1:1 per milestone, when raised)
+           │         │
+           │         └── project_applications
+           │
+           ├──── reviews
            │
            ├──── notifications
            │
@@ -78,10 +82,31 @@ users ─────┬──── wallets
 
 **Status transitions**
 
-- `OPEN` — created, no freelancer yet
-- `IN_PROGRESS` — freelancer accepted
+- `OPEN` — created, no freelancer yet (freelancers may apply)
+- `IN_PROGRESS` — client accepted an application (or legacy instant accept)
 - `COMPLETED` — all milestones approved (optional auto-transition)
 - `CANCELLED` — abandoned before work starts
+
+---
+
+### project_applications
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | BIGINT | PK, AUTO_INCREMENT |
+| project_id | BIGINT | NOT NULL, FK → projects(id) |
+| freelancer_id | BIGINT | NOT NULL, FK → users(id) |
+| status | VARCHAR(20) | NOT NULL — `PENDING`, `ACCEPTED`, `DECLINED`, `WITHDRAWN` |
+| message | TEXT | NULL — optional cover note |
+| created_at | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| updated_at | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP |
+
+**Rules**
+
+- `UNIQUE(project_id, freelancer_id)` — one application per freelancer per project.
+- Apply only while project is `OPEN` and `freelancer_id` is null.
+- Client accept: set application `ACCEPTED`, assign `projects.freelancer_id`, project → `IN_PROGRESS`, decline other `PENDING` rows.
+- Indexes: `(project_id, status)`, `(freelancer_id, created_at DESC)`.
 
 ---
 
@@ -175,6 +200,9 @@ users ─────┬──── wallets
 | `DISPUTE_RAISED` | Dispute raised (notify other party + admins) |
 | `DISPUTE_RESOLVED` | Admin resolves dispute (notify client + freelancer) |
 | `REVIEW_RECEIVED` | Client leaves a review (notify freelancer; `referenceType` = `PROJECT`) |
+| `APPLICATION_RECEIVED` | Freelancer applies (notify client; `referenceType` = `PROJECT`) |
+| `APPLICATION_ACCEPTED` | Client accepts application (notify freelancer) |
+| `APPLICATION_DECLINED` | Client declines application (notify freelancer) |
 
 **Notes**
 

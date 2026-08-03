@@ -229,9 +229,63 @@ Project detail with milestones.
 
 ### POST `/projects/{id}/accept`
 
-Freelancer accepts an `OPEN` project.
+**Legacy** — Freelancer instantly accepts an `OPEN` project (first-come). Prefer the applications flow below for hiring.
 
 **Response** `200` — project with `status: IN_PROGRESS`, `freelancer_id` set.
+
+---
+
+## Project applications
+
+Freelancers apply to `OPEN` projects; the client accepts one or declines. Rows share the business transaction (no Kafka).
+
+### POST `/projects/{projectId}/applications`
+
+Freelancer applies. Optional body:
+
+```json
+{ "message": "I can start this week." }
+```
+
+**Response** `201`
+
+```json
+{
+  "id": 1,
+  "projectId": 5,
+  "projectTitle": "Website redesign",
+  "freelancerId": 2,
+  "freelancerName": "Bob Dev",
+  "status": "PENDING",
+  "message": "I can start this week.",
+  "createdAt": "2026-08-03T12:00:00Z",
+  "updatedAt": "2026-08-03T12:00:00Z"
+}
+```
+
+Also notifies the project client (`APPLICATION_RECEIVED`).
+
+### GET `/projects/{projectId}/applications`
+
+Client (or assigned freelancer) lists applications for the project.
+
+**Response** `200` — array of `ApplicationResponse`.
+
+### GET `/applications/mine`
+
+Current freelancer's applications (newest first).
+
+### POST `/applications/{applicationId}/accept`
+
+Client accepts a `PENDING` application → project `IN_PROGRESS`, other pending applications declined. Notifies freelancer (`APPLICATION_ACCEPTED`).
+
+### POST `/applications/{applicationId}/decline`
+
+Client declines a `PENDING` application. Notifies freelancer (`APPLICATION_DECLINED`).
+
+### POST `/applications/{applicationId}/withdraw`
+
+Freelancer withdraws their own `PENDING` application.
 
 ---
 
@@ -528,7 +582,7 @@ Paginated list for the current user (newest first).
 }
 ```
 
-`type`: `PROJECT_CREATED` | `WORK_SUBMITTED` | `DISPUTE_RAISED` | `DISPUTE_RESOLVED` | `REVIEW_RECEIVED`  
+`type`: `PROJECT_CREATED` | `WORK_SUBMITTED` | `DISPUTE_RAISED` | `DISPUTE_RESOLVED` | `REVIEW_RECEIVED` | `APPLICATION_RECEIVED` | `APPLICATION_ACCEPTED` | `APPLICATION_DECLINED`  
 `referenceType`: `PROJECT` | `MILESTONE` | `DISPUTE` (nullable)
 
 ### GET `/notifications/unread-count`
@@ -603,7 +657,13 @@ Common error codes:
 | 7 | POST | `/projects` | Client |
 | 8 | GET | `/projects` | Auth |
 | 9 | GET | `/projects/{id}` | Auth |
-| 10 | POST | `/projects/{id}/accept` | Freelancer |
+| 10 | POST | `/projects/{id}/accept` | Freelancer (legacy) |
+| 10a | POST | `/projects/{id}/applications` | Freelancer |
+| 10b | GET | `/projects/{id}/applications` | Client |
+| 10c | GET | `/applications/mine` | Freelancer |
+| 10d | POST | `/applications/{id}/accept` | Client |
+| 10e | POST | `/applications/{id}/decline` | Client |
+| 10f | POST | `/applications/{id}/withdraw` | Freelancer |
 | 11 | POST | `/milestones/{id}/lock-funds` | Client |
 | 12 | POST | `/milestones/{id}/submit` | Freelancer |
 | 13 | POST | `/milestones/{id}/approve` | Client |
