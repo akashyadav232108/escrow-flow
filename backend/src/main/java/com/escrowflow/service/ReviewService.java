@@ -7,19 +7,27 @@ import com.escrowflow.domain.User;
 import com.escrowflow.domain.enums.MilestoneStatus;
 import com.escrowflow.repository.ProjectRepository;
 import com.escrowflow.repository.ReviewRepository;
+import com.escrowflow.repository.UserRepository;
 import com.escrowflow.security.SecurityUtils;
+import com.escrowflow.web.dto.CreateReviewRequest;
+import com.escrowflow.web.dto.RatingSummaryResponse;
+import com.escrowflow.web.dto.ReviewListResponse;
+import com.escrowflow.web.dto.ReviewResponse;
 import com.escrowflow.web.exception.ForbiddenException;
 import com.escrowflow.web.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
- * Freelancer reviews (v1 create path).
+ * Freelancer reviews (v1 create-only).
  * Eligibility: only the project client; at least one milestone APPROVED; one review per project.
- * List / rating-summary APIs come in a later step.
  */
 @Service
 @Slf4j
@@ -27,20 +35,22 @@ public class ReviewService {
 
     private final ReviewRepository reviewRepository;
     private final ProjectRepository projectRepository;
+    private final UserRepository userRepository;
 
-    public ReviewService(ReviewRepository reviewRepository, ProjectRepository projectRepository) {
+    public ReviewService(
+            ReviewRepository reviewRepository,
+            ProjectRepository projectRepository,
+            UserRepository userRepository) {
         this.reviewRepository = reviewRepository;
         this.projectRepository = projectRepository;
+        this.userRepository = userRepository;
     }
 
-    /**
-     * Creates a review for the project. Caller must be the project client.
-     * Rating must be 1–5; comment is optional.
-     */
     @Transactional
-    public Review create(Long projectId, Long reviewerId, int rating, String comment) {
+    public ReviewResponse create(Long projectId, CreateReviewRequest request) {
         rejectAdminReviewAccess();
-        validateRating(rating);
+        Long reviewerId = SecurityUtils.getCurrentUserId();
+        int rating = request.rating();
 
         Project project = projectRepository.findByIdWithDetails(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
@@ -53,7 +63,7 @@ public class ReviewService {
                 .reviewer(project.getClient())
                 .freelancer(project.getFreelancer())
                 .rating(rating)
-                .comment(blankToNull(comment))
+                .comment(blankToNull(request.comment()))
                 .createdAt(now)
                 .updatedAt(now)
                 .build());
@@ -64,7 +74,39 @@ public class ReviewService {
                 projectId,
                 project.getFreelancer().getId(),
                 rating);
-        return review;
+        return toResponse(review);
+    }
+
+    @Transactional(readOnly = true)
+    public ReviewListResponse listForFreelancer(Long freelancerId, int page, int size) {
+        requireUserExists(freelancerId);
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 50));
+        Page<Review> reviewPage =
+                reviewRepository.findByFreelancerIdOrderByCreatedAtDesc(freelancerId, pageable);
+
+        List<ReviewResponse> content = reviewPage.getContent().stream()
+                .map(this::toResponse)
+                .toList();
+
+        return new ReviewListResponse(
+                content,
+                reviewPage.getNumber(),
+                reviewPage.getSize(),
+                reviewPage.getTotalElements(),
+                reviewPage.getTotalPages()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public RatingSummaryResponse ratingSummary(Long freelancerId) {
+        requireUserExists(freelancerId);
+        long reviewCount = reviewRepository.countByFreelancerId(freelancerId);
+        if (reviewCount == 0) {
+            return new RatingSummaryResponse(0.0, 0);
+        }
+        Double average = reviewRepository.averageRatingByFreelancerId(freelancerId);
+        double averageRating = average == null ? 0.0 : Math.round(average * 10.0) / 10.0;
+        return new RatingSummaryResponse(averageRating, reviewCount);
     }
 
     /**
@@ -94,16 +136,29 @@ public class ReviewService {
         }
     }
 
+    private void requireUserExists(Long userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new ResourceNotFoundException("User not found");
+        }
+    }
+
     private void rejectAdminReviewAccess() {
         if (SecurityUtils.getCurrentRole().isAdminRole()) {
             throw new ForbiddenException("Admins cannot leave reviews");
         }
     }
 
-    private static void validateRating(int rating) {
-        if (rating < 1 || rating > 5) {
-            throw new IllegalArgumentException("Rating must be between 1 and 5");
-        }
+    private ReviewResponse toResponse(Review review) {
+        return new ReviewResponse(
+                review.getId(),
+                review.getProject().getId(),
+                review.getReviewer().getId(),
+                review.getReviewer().getName(),
+                review.getFreelancer().getId(),
+                review.getRating(),
+                review.getComment(),
+                review.getCreatedAt()
+        );
     }
 
     private static String blankToNull(String comment) {
