@@ -115,6 +115,12 @@ export default function MilestoneActions({
         </button>
       )}
 
+      {isClient && milestone.status === 'REFUNDED' && (
+        <button type="button" className="btn-soft btn-sm" disabled={busy} onClick={handleLockFunds}>
+          {busy ? 'Locking…' : 'Lock funds again'}
+        </button>
+      )}
+
       {isFreelancer && milestone.status === 'FUNDS_LOCKED' && !showSubmitForm && (
         <button
           type="button"

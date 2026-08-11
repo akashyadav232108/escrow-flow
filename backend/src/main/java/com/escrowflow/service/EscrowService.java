@@ -82,34 +82,60 @@ public class EscrowService {
             throw new IllegalStateException("Cannot lock funds while project exit is under admin review");
         }
 
-        if (milestone.getStatus() != MilestoneStatus.PENDING) {
+        boolean initialLock = milestone.getStatus() == MilestoneStatus.PENDING;
+        boolean relockAfterRefund = milestone.getStatus() == MilestoneStatus.REFUNDED;
+        if (!initialLock && !relockAfterRefund) {
             throw new InvalidMilestoneStateException(
                     "Cannot lock funds for milestone in status: " + milestone.getStatus());
+        }
+        if (relockAfterRefund) {
+            if (project.getStatus() != ProjectStatus.IN_PROGRESS || project.getFreelancer() == null) {
+                throw new IllegalStateException(
+                        "Can only re-lock a refunded milestone on an in-progress project with an assigned freelancer");
+            }
         }
 
         Wallet clientWallet = walletService.findWalletByUserId(clientUserId);
         String lockRequestId = lockService.acquireLock(clientWallet.getId());
 
         try {
-            lockFundsTransactional(milestone, clientWallet);
-            log.info("Funds locked: milestoneId={} amount={} clientWalletId={}",
-                    milestoneId, milestone.getAmount(), clientWallet.getId());
+            lockFundsTransactional(milestone, clientWallet, relockAfterRefund);
+            log.info("Funds locked: milestoneId={} amount={} clientWalletId={} relock={}",
+                    milestoneId, milestone.getAmount(), clientWallet.getId(), relockAfterRefund);
         } finally {
             lockService.releaseLock(clientWallet.getId(), lockRequestId);
         }
     }
 
     @Transactional
-    protected void lockFundsTransactional(Milestone milestone, Wallet clientWallet) {
-        walletService.debit(clientWallet, milestone.getAmount(), ReferenceType.ESCROW_LOCK, null);
+    protected void lockFundsTransactional(Milestone milestone, Wallet clientWallet, boolean relockAfterRefund) {
+        if (relockAfterRefund) {
+            EscrowHold hold = escrowHoldRepository.findByMilestoneId(milestone.getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Escrow hold not found"));
+            if (hold.getStatus() != EscrowHoldStatus.REFUNDED) {
+                throw new InvalidMilestoneStateException(
+                        "Cannot re-lock escrow hold in status: " + hold.getStatus());
+            }
 
-        EscrowHold hold = EscrowHold.builder()
-                .milestone(milestone)
-                .amount(milestone.getAmount())
-                .clientWallet(clientWallet)
-                .status(EscrowHoldStatus.HELD)
-                .build();
-        escrowHoldRepository.save(hold);
+            walletService.debit(
+                    clientWallet, milestone.getAmount(), ReferenceType.ESCROW_LOCK, hold.getId());
+
+            hold.setAmount(milestone.getAmount());
+            hold.setStatus(EscrowHoldStatus.HELD);
+            hold.setResolvedAt(null);
+            hold.setClientWallet(clientWallet);
+            escrowHoldRepository.save(hold);
+        } else {
+            walletService.debit(clientWallet, milestone.getAmount(), ReferenceType.ESCROW_LOCK, null);
+
+            EscrowHold hold = EscrowHold.builder()
+                    .milestone(milestone)
+                    .amount(milestone.getAmount())
+                    .clientWallet(clientWallet)
+                    .status(EscrowHoldStatus.HELD)
+                    .build();
+            escrowHoldRepository.save(hold);
+        }
 
         milestone.setStatus(MilestoneStatus.FUNDS_LOCKED);
         milestone.setUpdatedAt(Instant.now());

@@ -329,7 +329,7 @@ Exit detail (party or admin).
 
 ### POST `/milestones/{id}/lock-funds`
 
-Client locks escrow for a `PENDING` milestone.
+Client locks escrow for a `PENDING` milestone, or **re-locks** a `REFUNDED` milestone (reuses the same `escrow_holds` row: `REFUNDED` → `HELD`; wallet history kept via new `ESCROW_LOCK` debit).
 
 **Headers**: `Idempotency-Key: <uuid>` (required)
 

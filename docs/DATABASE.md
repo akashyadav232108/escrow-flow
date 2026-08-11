@@ -134,7 +134,7 @@ users ─────┬──── wallets
 | `SUBMITTED` | Freelancer submitted work |
 | `APPROVED` | Client approved; funds released to freelancer |
 | `DISPUTED` | Dispute raised; escrow stays `HELD` until admin resolves |
-| `REFUNDED` | Funds returned to client after dispute resolution (terminal) |
+| `REFUNDED` | Funds returned to client after dispute/exit; client may **re-lock** (reuse same hold → `HELD`) |
 | `SETTLED` | Project-exit partial split (terminal) |
 
 ---
@@ -252,7 +252,8 @@ One row per held milestone at raise time: `hold_amount` snapshot; on resolve `fr
 
 - `UNIQUE(milestone_id)` — at most one hold per milestone.
 - `amount` should match `milestones.amount` at lock time.
-- Terminal states: `RELEASED` (paid to freelancer), `REFUNDED` (returned to client).
+- Terminal states: `RELEASED` (paid to freelancer). `REFUNDED` may be re-locked (same hold row → `HELD` again); wallet tx history is append-only.
+- `SPLIT` — project-exit partial payout (terminal for that settlement round).
 
 ---
 

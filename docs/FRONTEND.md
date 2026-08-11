@@ -167,9 +167,10 @@ Show actions based on **role + milestone.status** (mirror backend rules):
 | Role | Status | Action |
 |------|--------|--------|
 | Client | PENDING | Lock funds |
+| Client | REFUNDED | Lock funds again (reuse hold) |
 | Freelancer | FUNDS_LOCKED | Submit work |
 | Client | SUBMITTED | Approve / Dispute |
-| Any | terminal | None (read-only) |
+| Any | APPROVED / SETTLED | None (read-only) |
 
 #### Lock funds — idempotency
 
