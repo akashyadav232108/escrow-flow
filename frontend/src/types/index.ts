@@ -47,7 +47,8 @@ export type MilestoneStatus =
   | 'SUBMITTED'
   | 'APPROVED'
   | 'DISPUTED'
-  | 'REFUNDED';
+  | 'REFUNDED'
+  | 'SETTLED';
 
 export interface Milestone {
   id: number;
@@ -57,7 +58,7 @@ export interface Milestone {
   status: MilestoneStatus;
 }
 
-export type ProjectStatus = 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+export type ProjectStatus = 'OPEN' | 'IN_PROGRESS' | 'EXIT_DISPUTED' | 'COMPLETED' | 'CANCELLED';
 
 export interface ProjectPerson {
   id: number;
@@ -176,9 +177,11 @@ export type NotificationType =
   | 'REVIEW_RECEIVED'
   | 'APPLICATION_RECEIVED'
   | 'APPLICATION_ACCEPTED'
-  | 'APPLICATION_DECLINED';
+  | 'APPLICATION_DECLINED'
+  | 'PROJECT_EXIT_RAISED'
+  | 'PROJECT_EXIT_RESOLVED';
 
-export type NotificationReferenceType = 'PROJECT' | 'MILESTONE' | 'DISPUTE';
+export type NotificationReferenceType = 'PROJECT' | 'MILESTONE' | 'DISPUTE' | 'PROJECT_EXIT';
 
 export interface NotificationItem {
   id: number;
@@ -248,5 +251,46 @@ export interface ProjectApplication {
 
 export interface ApplyToProjectInput {
   message?: string;
+}
+
+export type ProjectExitStatus = 'OPEN' | 'RESOLVED';
+export type ProjectExitOutcome = 'CANCELLED' | 'REOPEN';
+
+export interface ProjectExitSettlement {
+  id: number;
+  milestoneId: number;
+  milestoneTitle: string;
+  milestoneStatus: MilestoneStatus;
+  holdAmount: number;
+  freelancerAmount: number | null;
+  clientRefundAmount: number | null;
+}
+
+export interface ProjectExitDetail {
+  id: number;
+  projectId: number;
+  projectTitle: string;
+  projectStatus: ProjectStatus;
+  clientId: number;
+  clientName: string;
+  freelancerId: number | null;
+  freelancerName: string | null;
+  raisedById: number;
+  raisedByName: string;
+  reason: string;
+  status: ProjectExitStatus;
+  projectOutcome: ProjectExitOutcome | null;
+  adminNote: string | null;
+  resolvedByAdminId: number | null;
+  resolvedByAdminName: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
+  settlements: ProjectExitSettlement[];
+}
+
+export interface ResolveProjectExitInput {
+  projectOutcome: ProjectExitOutcome;
+  adminNote?: string;
+  settlements: { milestoneId: number; freelancerAmount: number }[];
 }
 

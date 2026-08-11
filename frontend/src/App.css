@@ -612,16 +612,65 @@
 }
 
 .status-approved,
-.status-completed {
+.status-completed,
+.status-settled {
   background: var(--color-success-bg);
   color: var(--color-success);
 }
 
 .status-disputed,
 .status-refunded,
-.status-cancelled {
+.status-cancelled,
+.status-exit_disputed {
   background: var(--color-danger-bg);
   color: var(--color-danger);
+}
+
+.exit-settlement-list {
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.exit-admin-settlements {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.exit-admin-settlements > li {
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+}
+
+.exit-admin-settlement-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.exit-amount-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.exit-amount-label input {
+  max-width: 12rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font: inherit;
 }
 
 /* Create project form */

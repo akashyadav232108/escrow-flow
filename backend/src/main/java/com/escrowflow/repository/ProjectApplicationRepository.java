@@ -42,4 +42,6 @@ public interface ProjectApplicationRepository extends JpaRepository<ProjectAppli
             @Param("now") Instant now);
 
     long countByProjectIdAndStatus(Long projectId, ApplicationStatus status);
+
+    void deleteByProjectId(Long projectId);
 }

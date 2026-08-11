@@ -289,6 +289,42 @@ Freelancer withdraws their own `PENDING` application.
 
 ---
 
+## Project exits (Phase B)
+
+Client or assigned freelancer can request to end an `IN_PROGRESS` project. Project becomes `EXIT_DISPUTED` (milestone actions frozen). Admin settles each **held** escrow milestone by choosing how much goes to the freelancer (rest refunds to client), then **cancels** or **reopens** the project. Admin decision is final.
+
+### POST `/projects/{projectId}/exit`
+
+Body: `{ "reason": "..." }` → `201` `ProjectExitResponse`.
+
+### GET `/projects/{projectId}/exit`
+
+Open exit for the project (parties only).
+
+### GET `/project-exits/{exitId}`
+
+Exit detail (party or admin).
+
+### Admin
+
+- `GET /admin/project-exits?status=`
+- `GET /admin/project-exits/{id}`
+- `POST /admin/project-exits/{id}/resolve`
+
+```json
+{
+  "projectOutcome": "CANCELLED",
+  "adminNote": "Partial work credited",
+  "settlements": [
+    { "milestoneId": 12, "freelancerAmount": 2000.0000 }
+  ]
+}
+```
+
+`freelancerAmount` must be between `0` and the snapshotted `holdAmount`. Client refund = hold − freelancer. Full freelancer → hold `RELEASED` / milestone `APPROVED`; full client → `REFUNDED`; both &gt; 0 → hold `SPLIT` / milestone `SETTLED`.
+
+---
+
 ## Milestones
 
 ### POST `/milestones/{id}/lock-funds`
@@ -582,8 +618,8 @@ Paginated list for the current user (newest first).
 }
 ```
 
-`type`: `PROJECT_CREATED` | `WORK_SUBMITTED` | `DISPUTE_RAISED` | `DISPUTE_RESOLVED` | `REVIEW_RECEIVED` | `APPLICATION_RECEIVED` | `APPLICATION_ACCEPTED` | `APPLICATION_DECLINED`  
-`referenceType`: `PROJECT` | `MILESTONE` | `DISPUTE` (nullable)
+`type`: `PROJECT_CREATED` | `WORK_SUBMITTED` | `DISPUTE_RAISED` | `DISPUTE_RESOLVED` | `REVIEW_RECEIVED` | `APPLICATION_RECEIVED` | `APPLICATION_ACCEPTED` | `APPLICATION_DECLINED` | `PROJECT_EXIT_RAISED` | `PROJECT_EXIT_RESOLVED`  
+`referenceType`: `PROJECT` | `MILESTONE` | `DISPUTE` | `PROJECT_EXIT` (nullable)
 
 ### GET `/notifications/unread-count`
 

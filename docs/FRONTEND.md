@@ -241,6 +241,7 @@ Disable action buttons while request in flight — prevents double-click (idempo
 - [ ] In-app notification bell (poll unread count, mark read, navigate)
 - [ ] Freelancer reviews (leave review after approve, rating on cards/profile)
 - [ ] Project applications (apply / client accept-decline on project detail)
+- [ ] Project exit (raise exit; admin per-milestone split)
 - [ ] Idempotency key on lock funds
 - [ ] Refetch wallet after escrow actions
 - [ ] Basic responsive layout

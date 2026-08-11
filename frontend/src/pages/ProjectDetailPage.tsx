@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import FreelancerRating from '../components/FreelancerRating';
 import MilestoneList from '../components/MilestoneList';
 import ProjectApplicationsSection from '../components/ProjectApplicationsSection';
+import ProjectExitSection from '../components/ProjectExitSection';
 import ProjectReviewSection from '../components/ProjectReviewSection';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchProjectById } from '../store/slices/projectsSlice';
@@ -65,6 +66,13 @@ export default function ProjectDetailPage() {
         canApplyAsFreelancer={canApplyAsFreelancer}
         onHired={refreshProject}
       />
+      <ProjectExitSection
+        projectId={selectedProject.id}
+        projectStatus={selectedProject.status}
+        isClient={isClient}
+        isAssignedFreelancer={isFreelancer}
+        onChanged={refreshProject}
+      />
       {selectedProject.freelancer && (
         <ProjectReviewSection
           projectId={selectedProject.id}
@@ -80,6 +88,7 @@ export default function ProjectDetailPage() {
         projectId={selectedProject.id}
         isClient={isClient}
         isFreelancer={isFreelancer}
+        actionsDisabled={selectedProject.status === 'EXIT_DISPUTED'}
       />
     </div>
   );

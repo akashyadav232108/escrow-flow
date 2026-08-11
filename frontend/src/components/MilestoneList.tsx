@@ -8,6 +8,7 @@ const STATUS_CLASS: Record<Milestone['status'], string> = {
   APPROVED: 'status-approved',
   DISPUTED: 'status-disputed',
   REFUNDED: 'status-refunded',
+  SETTLED: 'status-settled',
 };
 
 interface MilestoneListProps {
@@ -15,6 +16,7 @@ interface MilestoneListProps {
   projectId: number;
   isClient: boolean;
   isFreelancer: boolean;
+  actionsDisabled?: boolean;
 }
 
 export default function MilestoneList({
@@ -22,6 +24,7 @@ export default function MilestoneList({
   projectId,
   isClient,
   isFreelancer,
+  actionsDisabled = false,
 }: MilestoneListProps) {
   return (
     <ul className="milestone-list">
@@ -32,12 +35,14 @@ export default function MilestoneList({
             <span className={`status-badge ${STATUS_CLASS[milestone.status]}`}>{milestone.status}</span>
             <span className="milestone-amount">₹{milestone.amount}</span>
           </div>
-          <MilestoneActions
-            milestone={milestone}
-            projectId={projectId}
-            isClient={isClient}
-            isFreelancer={isFreelancer}
-          />
+          {!actionsDisabled && (
+            <MilestoneActions
+              milestone={milestone}
+              projectId={projectId}
+              isClient={isClient}
+              isFreelancer={isFreelancer}
+            />
+          )}
         </li>
       ))}
     </ul>

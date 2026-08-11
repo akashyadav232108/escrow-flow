@@ -123,6 +123,7 @@
 - [x] Admin dispute resolution panel
 - [x] In-app notifications (MySQL rows + poll; no Kafka)
 - [x] Project applications (apply / client accept-decline; Phase A hiring)
+- [x] Project exit disputes (admin per-milestone escrow split; final)
 - [ ] Email notifications on submit/approve
 - [ ] GitHub Actions CI (build + test on PR)
 - [ ] OpenAPI / Swagger UI for API docs

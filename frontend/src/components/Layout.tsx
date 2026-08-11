@@ -82,6 +82,9 @@ export default function Layout() {
               <NavLink to="/admin/disputes" className={navLinkClass} onClick={closeNav}>
                 Disputes
               </NavLink>
+              <NavLink to="/admin/project-exits" className={navLinkClass} onClick={closeNav}>
+                Project exits
+              </NavLink>
               <NavLink to="/admin/users" className={navLinkClass} onClick={closeNav}>
                 Users
               </NavLink>

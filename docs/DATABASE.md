@@ -77,15 +77,16 @@ users ─────┬──── wallets
 | freelancer_id | BIGINT | NULL, FK → users(id) |
 | title | VARCHAR(255) | NOT NULL |
 | description | TEXT | |
-| status | VARCHAR(20) | NOT NULL — `OPEN`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED` |
+| status | VARCHAR(20) | NOT NULL — `OPEN`, `IN_PROGRESS`, `EXIT_DISPUTED`, `COMPLETED`, `CANCELLED` |
 | created_at | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
 
 **Status transitions**
 
 - `OPEN` — created, no freelancer yet (freelancers may apply)
 - `IN_PROGRESS` — client accepted an application (or legacy instant accept)
+- `EXIT_DISPUTED` — project exit open; milestone money actions frozen until admin resolves
 - `COMPLETED` — all milestones approved (optional auto-transition)
-- `CANCELLED` — abandoned before work starts
+- `CANCELLED` — abandoned / exit cancelled
 
 ---
 
@@ -134,6 +135,27 @@ users ─────┬──── wallets
 | `APPROVED` | Client approved; funds released to freelancer |
 | `DISPUTED` | Dispute raised; escrow stays `HELD` until admin resolves |
 | `REFUNDED` | Funds returned to client after dispute resolution (terminal) |
+| `SETTLED` | Project-exit partial split (terminal) |
+
+---
+
+### project_exits
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | BIGINT | PK |
+| project_id | BIGINT | NOT NULL, FK → projects |
+| raised_by_user_id | BIGINT | NOT NULL, FK → users |
+| reason | TEXT | NOT NULL |
+| status | VARCHAR(20) | `OPEN`, `RESOLVED` |
+| project_outcome | VARCHAR(20) | NULL — `CANCELLED`, `REOPEN` on resolve |
+| admin_note | TEXT | NULL |
+| resolved_by_admin_id | BIGINT | NULL |
+| created_at / resolved_at | TIMESTAMP | |
+
+### project_exit_settlements
+
+One row per held milestone at raise time: `hold_amount` snapshot; on resolve `freelancer_amount` + `client_refund_amount` (sum = hold).
 
 ---
 
@@ -203,6 +225,8 @@ users ─────┬──── wallets
 | `APPLICATION_RECEIVED` | Freelancer applies (notify client; `referenceType` = `PROJECT`) |
 | `APPLICATION_ACCEPTED` | Client accepts application (notify freelancer) |
 | `APPLICATION_DECLINED` | Client declines application (notify freelancer) |
+| `PROJECT_EXIT_RAISED` | Project exit requested (other party + admins) |
+| `PROJECT_EXIT_RESOLVED` | Admin resolved project exit (client + freelancer) |
 
 **Notes**
 

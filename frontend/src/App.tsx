@@ -6,6 +6,8 @@ import AdminAdminsPage from './pages/AdminAdminsPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminDisputeDetailPage from './pages/AdminDisputeDetailPage';
 import AdminDisputesPage from './pages/AdminDisputesPage';
+import AdminProjectExitDetailPage from './pages/AdminProjectExitDetailPage';
+import AdminProjectExitsPage from './pages/AdminProjectExitsPage';
 import AdminUserDetailPage from './pages/AdminUserDetailPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import DashboardPage from './pages/DashboardPage';
@@ -54,6 +56,22 @@ function App() {
           element={
             <RequireAdmin>
               <AdminDisputeDetailPage />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/project-exits"
+          element={
+            <RequireAdmin>
+              <AdminProjectExitsPage />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/project-exits/:id"
+          element={
+            <RequireAdmin>
+              <AdminProjectExitDetailPage />
             </RequireAdmin>
           }
         />

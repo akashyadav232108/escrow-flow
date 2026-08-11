@@ -2,14 +2,18 @@ package com.escrowflow.web.controller;
 
 import com.escrowflow.domain.enums.AccountStatus;
 import com.escrowflow.domain.enums.DisputeStatus;
+import com.escrowflow.domain.enums.ProjectExitStatus;
 import com.escrowflow.service.AdminService;
+import com.escrowflow.service.ProjectExitService;
 import com.escrowflow.web.dto.AdminDashboardStatsResponse;
 import com.escrowflow.web.dto.AdminUserResponse;
 import com.escrowflow.web.dto.CreateAdminRequest;
 import com.escrowflow.web.dto.DisputeResponse;
 import com.escrowflow.web.dto.ManagedUserResponse;
 import com.escrowflow.web.dto.ModerationReasonRequest;
+import com.escrowflow.web.dto.ProjectExitResponse;
 import com.escrowflow.web.dto.ResolveDisputeRequest;
+import com.escrowflow.web.dto.ResolveProjectExitRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,9 +32,11 @@ import java.util.List;
 public class AdminController {
 
     private final AdminService adminService;
+    private final ProjectExitService projectExitService;
 
-    public AdminController(AdminService adminService) {
+    public AdminController(AdminService adminService, ProjectExitService projectExitService) {
         this.adminService = adminService;
+        this.projectExitService = projectExitService;
     }
 
     @PostMapping("/admins")
@@ -65,6 +71,24 @@ public class AdminController {
             @PathVariable Long id,
             @Valid @RequestBody ResolveDisputeRequest request) {
         return adminService.resolveDispute(id, request);
+    }
+
+    @GetMapping("/project-exits")
+    public List<ProjectExitResponse> listProjectExits(
+            @RequestParam(required = false) ProjectExitStatus status) {
+        return projectExitService.listForAdmin(status);
+    }
+
+    @GetMapping("/project-exits/{id}")
+    public ProjectExitResponse getProjectExit(@PathVariable Long id) {
+        return projectExitService.getById(id);
+    }
+
+    @PostMapping("/project-exits/{id}/resolve")
+    public ProjectExitResponse resolveProjectExit(
+            @PathVariable Long id,
+            @Valid @RequestBody ResolveProjectExitRequest request) {
+        return projectExitService.resolve(id, request);
     }
 
     @GetMapping("/users")
