@@ -691,6 +691,12 @@
   font-size: 1.1rem;
 }
 
+.create-project-form .form-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
 .create-project-form > label {
   display: flex;
   flex-direction: column;
