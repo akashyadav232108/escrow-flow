@@ -14,7 +14,9 @@ users ─────┬──── wallets
            │         │         ├── escrow_holds (1:1 per milestone)
            │         │         └── disputes (1:1 per milestone, when raised)
            │         │
-           │         └── project_applications
+           │         ├── project_applications
+           │         ├── project_agreements (1:1 on hire)
+           │         └── project_exits / settlements
            │
            ├──── reviews
            │
@@ -108,6 +110,28 @@ users ─────┬──── wallets
 - Apply only while project is `OPEN` and `freelancer_id` is null.
 - Client accept: set application `ACCEPTED`, assign `projects.freelancer_id`, project → `IN_PROGRESS`, decline other `PENDING` rows.
 - Indexes: `(project_id, status)`, `(freelancer_id, created_at DESC)`.
+
+---
+
+### project_agreements
+
+Hire-time shared terms (Flyway `V11`). One row per project after client accepts an application.
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | BIGINT | PK, AUTO_INCREMENT |
+| project_id | BIGINT | NOT NULL, UNIQUE, FK → projects(id) |
+| terms_version | VARCHAR(20) | NOT NULL |
+| terms_text | TEXT | NOT NULL — snapshot at hire |
+| client_accepted_at | TIMESTAMP | NULL — set at hire when client accepts terms |
+| freelancer_accepted_at | TIMESTAMP | NULL — set when freelancer accepts |
+| created_at | TIMESTAMP | NOT NULL |
+
+**Rules**
+
+- No automatic penalties; acknowledgement only (evidence for disputes/exits).
+- Lock funds, submit, approve, dispute require both timestamps set (legacy projects with no row are exempt).
+- On exit resolve with `REOPEN`, delete agreement (with applications) so a new hire creates a fresh row.
 
 ---
 

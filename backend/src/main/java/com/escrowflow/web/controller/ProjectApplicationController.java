@@ -1,6 +1,7 @@
 package com.escrowflow.web.controller;
 
 import com.escrowflow.service.ProjectApplicationService;
+import com.escrowflow.web.dto.AcceptApplicationRequest;
 import com.escrowflow.web.dto.ApplicationResponse;
 import com.escrowflow.web.dto.ApplyToProjectRequest;
 import jakarta.validation.Valid;
@@ -44,8 +45,10 @@ public class ProjectApplicationController {
     }
 
     @PostMapping("/applications/{applicationId}/accept")
-    public ApplicationResponse accept(@PathVariable Long applicationId) {
-        return applicationService.accept(applicationId);
+    public ApplicationResponse accept(
+            @PathVariable Long applicationId,
+            @Valid @RequestBody AcceptApplicationRequest request) {
+        return applicationService.accept(applicationId, request);
     }
 
     @PostMapping("/applications/{applicationId}/decline")

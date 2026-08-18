@@ -12,6 +12,7 @@ import com.escrowflow.repository.ProjectApplicationRepository;
 import com.escrowflow.repository.ProjectRepository;
 import com.escrowflow.repository.UserRepository;
 import com.escrowflow.security.SecurityUtils;
+import com.escrowflow.web.dto.AcceptApplicationRequest;
 import com.escrowflow.web.dto.ApplicationResponse;
 import com.escrowflow.web.dto.ApplyToProjectRequest;
 import com.escrowflow.web.exception.ForbiddenException;
@@ -39,16 +40,19 @@ public class ProjectApplicationService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final ProjectAgreementService projectAgreementService;
 
     public ProjectApplicationService(
             ProjectApplicationRepository applicationRepository,
             ProjectRepository projectRepository,
             UserRepository userRepository,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            ProjectAgreementService projectAgreementService) {
         this.applicationRepository = applicationRepository;
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
+        this.projectAgreementService = projectAgreementService;
     }
 
     @Transactional
@@ -94,9 +98,13 @@ public class ProjectApplicationService {
     }
 
     @Transactional
-    public ApplicationResponse accept(Long applicationId) {
+    public ApplicationResponse accept(Long applicationId, AcceptApplicationRequest request) {
         rejectAdminAccess();
         Long clientId = SecurityUtils.getCurrentUserId();
+
+        if (request == null || !request.acceptedTerms()) {
+            throw new IllegalArgumentException("You must accept the project agreement to hire");
+        }
 
         ProjectApplication application = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
@@ -114,6 +122,8 @@ public class ProjectApplicationService {
         project.setStatus(ProjectStatus.IN_PROGRESS);
         projectRepository.save(project);
 
+        projectAgreementService.createOnHire(project, now);
+
         int declined = applicationRepository.declineOtherPending(
                 project.getId(), application.getId(), now);
 
@@ -128,7 +138,8 @@ public class ProjectApplicationService {
                 application.getFreelancer().getId(),
                 NotificationType.APPLICATION_ACCEPTED,
                 "Application accepted",
-                "Your application for \"" + project.getTitle() + "\" was accepted.",
+                "Your application for \"" + project.getTitle()
+                        + "\" was accepted. Please accept the project agreement to continue.",
                 NotificationReferenceType.PROJECT,
                 project.getId());
 

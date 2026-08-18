@@ -48,6 +48,7 @@ public class EscrowService {
     private final RedisWalletLockService lockService;
     private final DisputeRateLimitService disputeRateLimitService;
     private final NotificationService notificationService;
+    private final ProjectAgreementService projectAgreementService;
 
     public EscrowService(
             MilestoneRepository milestoneRepository,
@@ -57,7 +58,8 @@ public class EscrowService {
             WalletService walletService,
             RedisWalletLockService lockService,
             DisputeRateLimitService disputeRateLimitService,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            ProjectAgreementService projectAgreementService) {
         this.milestoneRepository = milestoneRepository;
         this.escrowHoldRepository = escrowHoldRepository;
         this.disputeRepository = disputeRepository;
@@ -66,6 +68,7 @@ public class EscrowService {
         this.lockService = lockService;
         this.disputeRateLimitService = disputeRateLimitService;
         this.notificationService = notificationService;
+        this.projectAgreementService = projectAgreementService;
     }
 
     public void lockFunds(Long milestoneId, Long clientUserId) {
@@ -81,6 +84,8 @@ public class EscrowService {
         if (project.getStatus() == ProjectStatus.EXIT_DISPUTED) {
             throw new IllegalStateException("Cannot lock funds while project exit is under admin review");
         }
+
+        projectAgreementService.requireFullyAccepted(project.getId());
 
         boolean initialLock = milestone.getStatus() == MilestoneStatus.PENDING;
         boolean relockAfterRefund = milestone.getStatus() == MilestoneStatus.REFUNDED;
@@ -157,6 +162,8 @@ public class EscrowService {
             throw new IllegalStateException("Cannot approve while project exit is under admin review");
         }
 
+        projectAgreementService.requireFullyAccepted(project.getId());
+
         if (milestone.getStatus() != MilestoneStatus.SUBMITTED) {
             throw new InvalidMilestoneStateException(
                     "Cannot approve milestone in status: " + milestone.getStatus());
@@ -189,6 +196,8 @@ public class EscrowService {
         if (project.getStatus() == ProjectStatus.EXIT_DISPUTED) {
             throw new IllegalStateException("Cannot raise milestone dispute while project exit is open");
         }
+
+        projectAgreementService.requireFullyAccepted(project.getId());
 
         if (milestone.getStatus() != MilestoneStatus.SUBMITTED) {
             throw new InvalidMilestoneStateException(

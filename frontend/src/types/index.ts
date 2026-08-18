@@ -253,6 +253,19 @@ export interface ApplyToProjectInput {
   message?: string;
 }
 
+export interface ProjectAgreement {
+  id: number;
+  projectId: number;
+  termsVersion: string;
+  termsText: string;
+  clientAcceptedAt: string | null;
+  freelancerAcceptedAt: string | null;
+  clientAccepted: boolean;
+  freelancerAccepted: boolean;
+  fullyAccepted: boolean;
+  createdAt: string;
+}
+
 export type ProjectExitStatus = 'OPEN' | 'RESOLVED';
 export type ProjectExitOutcome = 'CANCELLED' | 'REOPEN';
 

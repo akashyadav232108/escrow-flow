@@ -61,6 +61,7 @@ public class ProjectExitService {
     private final EscrowHoldRepository escrowHoldRepository;
     private final DisputeRepository disputeRepository;
     private final ProjectApplicationRepository projectApplicationRepository;
+    private final ProjectAgreementService projectAgreementService;
     private final UserRepository userRepository;
     private final EscrowService escrowService;
     private final NotificationService notificationService;
@@ -71,6 +72,7 @@ public class ProjectExitService {
             EscrowHoldRepository escrowHoldRepository,
             DisputeRepository disputeRepository,
             ProjectApplicationRepository projectApplicationRepository,
+            ProjectAgreementService projectAgreementService,
             UserRepository userRepository,
             EscrowService escrowService,
             NotificationService notificationService) {
@@ -79,6 +81,7 @@ public class ProjectExitService {
         this.escrowHoldRepository = escrowHoldRepository;
         this.disputeRepository = disputeRepository;
         this.projectApplicationRepository = projectApplicationRepository;
+        this.projectAgreementService = projectAgreementService;
         this.userRepository = userRepository;
         this.escrowService = escrowService;
         this.notificationService = notificationService;
@@ -193,6 +196,7 @@ public class ProjectExitService {
             project.setFreelancer(null);
             project.setStatus(ProjectStatus.OPEN);
             projectApplicationRepository.deleteByProjectId(project.getId());
+            projectAgreementService.deleteForProject(project.getId());
         }
         projectRepository.save(project);
 

@@ -22,10 +22,15 @@ public class MilestoneService {
 
     private final MilestoneRepository milestoneRepository;
     private final NotificationService notificationService;
+    private final ProjectAgreementService projectAgreementService;
 
-    public MilestoneService(MilestoneRepository milestoneRepository, NotificationService notificationService) {
+    public MilestoneService(
+            MilestoneRepository milestoneRepository,
+            NotificationService notificationService,
+            ProjectAgreementService projectAgreementService) {
         this.milestoneRepository = milestoneRepository;
         this.notificationService = notificationService;
+        this.projectAgreementService = projectAgreementService;
     }
 
     @Transactional
@@ -42,6 +47,8 @@ public class MilestoneService {
         if (project.getStatus() == ProjectStatus.EXIT_DISPUTED) {
             throw new IllegalStateException("Cannot submit work while project exit is under admin review");
         }
+
+        projectAgreementService.requireFullyAccepted(project.getId());
 
         if (milestone.getStatus() != MilestoneStatus.FUNDS_LOCKED) {
             throw new InvalidMilestoneStateException(

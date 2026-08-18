@@ -277,7 +277,15 @@ Current freelancer's applications (newest first).
 
 ### POST `/applications/{applicationId}/accept`
 
-Client accepts a `PENDING` application → project `IN_PROGRESS`, other pending applications declined. Notifies freelancer (`APPLICATION_ACCEPTED`).
+Client accepts a `PENDING` application → project `IN_PROGRESS`, other pending applications declined, and creates a **project agreement** with the client already marked accepted. Notifies freelancer (`APPLICATION_ACCEPTED`).
+
+**Body** (required):
+
+```json
+{ "acceptedTerms": true }
+```
+
+`acceptedTerms` must be `true` (`@AssertTrue`). Freelancer must still accept the agreement before lock/submit/approve/dispute.
 
 ### POST `/applications/{applicationId}/decline`
 
@@ -286,6 +294,37 @@ Client declines a `PENDING` application. Notifies freelancer (`APPLICATION_DECLI
 ### POST `/applications/{applicationId}/withdraw`
 
 Freelancer withdraws their own `PENDING` application.
+
+---
+
+## Project agreements (hire-time terms)
+
+Shared terms created when the client accepts an application. **No automatic penalties** — acknowledgement only; used as evidence in disputes/exits. Milestone lock, submit, approve, and dispute stay blocked until **both** parties have accepted. Legacy projects without an agreement row are allowed to continue.
+
+### GET `/projects/{projectId}/agreement`
+
+Client, assigned freelancer, or admin. `404` if none.
+
+**Response** `200`:
+
+```json
+{
+  "id": 1,
+  "projectId": 10,
+  "termsVersion": "1.0",
+  "termsText": "...",
+  "clientAcceptedAt": "2026-08-17T06:00:00Z",
+  "freelancerAcceptedAt": null,
+  "clientAccepted": true,
+  "freelancerAccepted": false,
+  "fullyAccepted": false,
+  "createdAt": "2026-08-17T06:00:00Z"
+}
+```
+
+### POST `/projects/{projectId}/agreement/accept`
+
+Client or assigned freelancer records their acceptance (idempotent per party once). Admins cannot accept.
 
 ---
 
@@ -697,9 +736,11 @@ Common error codes:
 | 10a | POST | `/projects/{id}/applications` | Freelancer |
 | 10b | GET | `/projects/{id}/applications` | Client |
 | 10c | GET | `/applications/mine` | Freelancer |
-| 10d | POST | `/applications/{id}/accept` | Client |
+| 10d | POST | `/applications/{id}/accept` | Client (body: acceptedTerms) |
 | 10e | POST | `/applications/{id}/decline` | Client |
 | 10f | POST | `/applications/{id}/withdraw` | Freelancer |
+| 10g | GET | `/projects/{id}/agreement` | Client / freelancer / admin |
+| 10h | POST | `/projects/{id}/agreement/accept` | Client / freelancer |
 | 11 | POST | `/milestones/{id}/lock-funds` | Client |
 | 12 | POST | `/milestones/{id}/submit` | Freelancer |
 | 13 | POST | `/milestones/{id}/approve` | Client |

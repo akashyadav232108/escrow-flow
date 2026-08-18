@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import FreelancerRating from '../components/FreelancerRating';
 import MilestoneList from '../components/MilestoneList';
+import ProjectAgreementSection from '../components/ProjectAgreementSection';
 import ProjectApplicationsSection from '../components/ProjectApplicationsSection';
 import ProjectExitSection from '../components/ProjectExitSection';
 import ProjectReviewSection from '../components/ProjectReviewSection';
@@ -14,12 +15,17 @@ export default function ProjectDetailPage() {
   const { selectedProject, loading, error } = useAppSelector((state) => state.projects);
   const user = useAppSelector((state) => state.auth.user);
   const [ratingRefreshKey, setRatingRefreshKey] = useState(0);
+  const [agreementReady, setAgreementReady] = useState(true);
 
   useEffect(() => {
     if (id) {
       dispatch(fetchProjectById(Number(id)));
     }
   }, [dispatch, id]);
+
+  useEffect(() => {
+    setAgreementReady(true);
+  }, [selectedProject?.id]);
 
   if (loading || !selectedProject) {
     return <p>{error ?? 'Loading project…'}</p>;
@@ -34,6 +40,9 @@ export default function ProjectDetailPage() {
   const refreshProject = () => {
     void dispatch(fetchProjectById(selectedProject.id));
   };
+
+  const milestonesBlocked =
+    selectedProject.status === 'EXIT_DISPUTED' || !agreementReady;
 
   return (
     <div className="project-detail-page">
@@ -66,6 +75,14 @@ export default function ProjectDetailPage() {
         canApplyAsFreelancer={canApplyAsFreelancer}
         onHired={refreshProject}
       />
+      {selectedProject.freelancer && (
+        <ProjectAgreementSection
+          projectId={selectedProject.id}
+          isClient={isClient}
+          isAssignedFreelancer={isFreelancer}
+          onReadyChange={setAgreementReady}
+        />
+      )}
       <ProjectExitSection
         projectId={selectedProject.id}
         projectStatus={selectedProject.status}
@@ -83,12 +100,17 @@ export default function ProjectDetailPage() {
           onReviewCreated={() => setRatingRefreshKey((k) => k + 1)}
         />
       )}
+      {!agreementReady && selectedProject.freelancer && (isClient || isFreelancer) && (
+        <p className="muted-text agreement-gate-note">
+          Milestone actions are paused until both parties accept the project agreement.
+        </p>
+      )}
       <MilestoneList
         milestones={selectedProject.milestones ?? []}
         projectId={selectedProject.id}
         isClient={isClient}
         isFreelancer={isFreelancer}
-        actionsDisabled={selectedProject.status === 'EXIT_DISPUTED'}
+        actionsDisabled={milestonesBlocked}
       />
     </div>
   );

@@ -4,6 +4,19 @@ import type { ProjectApplication, ProjectStatus } from '../types';
 import { extractApiErrorMessage } from '../utils/errors';
 import FreelancerRating from './FreelancerRating';
 
+/** Mirrors backend ProjectAgreementService.DEFAULT_TERMS v1.0 for hire confirmation. */
+const HIRE_TERMS_PREVIEW = `Escrow-Flow Project Agreement (v1.0)
+
+1. Scope — Work is defined by this project's milestones and descriptions.
+2. Escrow — Client funds milestones before work; funds release on approval or per dispute/exit rules.
+3. Delivery — Freelancer submits completed work for each funded milestone in good faith.
+4. Disputes — Milestone disputes and project exits are reviewed by platform admins.
+5. Settlements — Admin decisions on held escrow (including splits) are final for platform purposes.
+6. Evidence — These accepted terms may be referenced by either party during disputes or exits.
+7. No automatic penalties — Accepting these terms does not authorize automatic fines; money moves only via escrow, approval, dispute, or exit settlement.
+
+By accepting, you confirm you have read and agree to these terms for this project.`;
+
 interface ProjectApplicationsSectionProps {
   projectId: number;
   projectStatus: ProjectStatus;
@@ -28,6 +41,8 @@ export default function ProjectApplicationsSection({
   const [message, setMessage] = useState('');
   const [busyId, setBusyId] = useState<number | 'apply' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [acceptingId, setAcceptingId] = useState<number | null>(null);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const loadClientList = useCallback(async () => {
     const list = await applicationApi.listForProject(projectId);
@@ -99,11 +114,28 @@ export default function ProjectApplicationsSection({
     }
   };
 
-  const handleAccept = async (applicationId: number) => {
+  const startAccept = (applicationId: number) => {
+    setAcceptingId(applicationId);
+    setAcceptedTerms(false);
+    setError(null);
+  };
+
+  const cancelAccept = () => {
+    setAcceptingId(null);
+    setAcceptedTerms(false);
+  };
+
+  const handleConfirmHire = async (applicationId: number) => {
+    if (!acceptedTerms) {
+      setError('You must accept the project agreement to hire');
+      return;
+    }
     setBusyId(applicationId);
     setError(null);
     try {
-      await applicationApi.accept(applicationId);
+      await applicationApi.accept(applicationId, true);
+      setAcceptingId(null);
+      setAcceptedTerms(false);
       await loadClientList();
       onHired?.();
     } catch (err) {
@@ -118,6 +150,9 @@ export default function ProjectApplicationsSection({
     setError(null);
     try {
       await applicationApi.decline(applicationId);
+      if (acceptingId === applicationId) {
+        cancelAccept();
+      }
       await loadClientList();
     } catch (err) {
       setError(extractApiErrorMessage(err, 'Failed to decline application'));
@@ -152,15 +187,15 @@ export default function ProjectApplicationsSection({
                 <p className="muted-text application-meta">
                   Applied {new Date(app.createdAt).toLocaleString()}
                 </p>
-                {openForHire && app.status === 'PENDING' && (
+                {openForHire && app.status === 'PENDING' && acceptingId !== app.id && (
                   <div className="application-actions">
                     <button
                       type="button"
                       className="btn-primary"
                       disabled={busyId === app.id}
-                      onClick={() => void handleAccept(app.id)}
+                      onClick={() => startAccept(app.id)}
                     >
-                      {busyId === app.id ? 'Working…' : 'Accept'}
+                      Accept
                     </button>
                     <button
                       type="button"
@@ -172,6 +207,41 @@ export default function ProjectApplicationsSection({
                     </button>
                   </div>
                 )}
+                {openForHire && app.status === 'PENDING' && acceptingId === app.id && (
+                  <div className="hire-agreement-panel">
+                    <p className="muted-text">
+                      Review and accept the project agreement to hire. The freelancer must also
+                      accept before milestone work and escrow continue. No automatic penalties.
+                    </p>
+                    <pre className="agreement-terms">{HIRE_TERMS_PREVIEW}</pre>
+                    <label className="agreement-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={acceptedTerms}
+                        onChange={(e) => setAcceptedTerms(e.target.checked)}
+                      />
+                      I accept these terms and hire this freelancer
+                    </label>
+                    <div className="application-actions">
+                      <button
+                        type="button"
+                        className="btn-primary"
+                        disabled={busyId === app.id || !acceptedTerms}
+                        onClick={() => void handleConfirmHire(app.id)}
+                      >
+                        {busyId === app.id ? 'Hiring…' : 'Confirm hire'}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        disabled={busyId === app.id}
+                        onClick={cancelAccept}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
@@ -180,7 +250,6 @@ export default function ProjectApplicationsSection({
     );
   }
 
-  // Freelancer apply / withdraw
   return (
     <section className="applications-section">
       <h2>Your application</h2>
