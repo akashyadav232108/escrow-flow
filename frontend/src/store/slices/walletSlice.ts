@@ -61,7 +61,7 @@ const walletSlice = createSlice({
       })
       .addCase(addFunds.fulfilled, (state, action) => {
         state.loading = false;
-        state.balance = action.payload.balance;
+        state.balance = action.payload.wallet.balance;
       })
       .addCase(addFunds.rejected, (state, action) => {
         state.loading = false;

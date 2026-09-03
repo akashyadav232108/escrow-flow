@@ -1088,11 +1088,37 @@
   box-shadow: var(--shadow-card);
 }
 
+.milestone-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
 .milestone-info {
   display: flex;
   align-items: center;
   gap: 0.85rem;
   padding-top: 0.35rem;
+}
+
+.milestone-submitted-note {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.milestone-submitted-label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.milestone-submitted-note p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 .milestone-actions {

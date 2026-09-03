@@ -93,11 +93,13 @@ public class EscrowService {
             throw new InvalidMilestoneStateException(
                     "Cannot lock funds for milestone in status: " + milestone.getStatus());
         }
-        if (relockAfterRefund) {
-            if (project.getStatus() != ProjectStatus.IN_PROGRESS || project.getFreelancer() == null) {
+        if (project.getStatus() != ProjectStatus.IN_PROGRESS || project.getFreelancer() == null) {
+            if (relockAfterRefund) {
                 throw new IllegalStateException(
                         "Can only re-lock a refunded milestone on an in-progress project with an assigned freelancer");
             }
+            throw new IllegalStateException(
+                    "Can only lock milestone funds on an in-progress project with an assigned freelancer");
         }
 
         Wallet clientWallet = walletService.findWalletByUserId(clientUserId);

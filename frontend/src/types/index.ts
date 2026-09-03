@@ -22,6 +22,12 @@ export interface Wallet {
   updatedAt: string;
 }
 
+export interface AddFundsResponse {
+  wallet: Wallet;
+  transactionId: number;
+  createdAt: string;
+}
+
 export type TransactionType = 'CREDIT' | 'DEBIT';
 
 export interface Transaction {
@@ -56,6 +62,7 @@ export interface Milestone {
   description?: string;
   amount: number;
   status: MilestoneStatus;
+  submittedNote?: string | null;
 }
 
 export type ProjectStatus = 'OPEN' | 'IN_PROGRESS' | 'EXIT_DISPUTED' | 'COMPLETED' | 'CANCELLED';

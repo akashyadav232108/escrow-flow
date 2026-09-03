@@ -42,7 +42,7 @@ export default function ProjectDetailPage() {
   };
 
   const milestonesBlocked =
-    selectedProject.status === 'EXIT_DISPUTED' || !agreementReady;
+    selectedProject.status !== 'IN_PROGRESS' || !selectedProject.freelancer || !agreementReady;
 
   return (
     <div className="project-detail-page">
@@ -103,6 +103,11 @@ export default function ProjectDetailPage() {
       {!agreementReady && selectedProject.freelancer && (isClient || isFreelancer) && (
         <p className="muted-text agreement-gate-note">
           Milestone actions are paused until both parties accept the project agreement.
+        </p>
+      )}
+      {selectedProject.status !== 'IN_PROGRESS' && (
+        <p className="muted-text agreement-gate-note">
+          Milestone actions are available only after a freelancer is hired and the project is in progress.
         </p>
       )}
       <MilestoneList
