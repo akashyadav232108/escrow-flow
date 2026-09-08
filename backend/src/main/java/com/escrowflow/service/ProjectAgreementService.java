@@ -118,10 +118,20 @@ public class ProjectAgreementService {
     @Transactional(readOnly = true)
     public void requireFullyAccepted(Long projectId) {
         ProjectAgreement agreement = agreementRepository.findByProjectId(projectId).orElse(null);
-        // Legacy projects hired before agreements existed may continue without a row.
+        
         if (agreement == null) {
+            // Legacy exemption: old hired projects (before V11) may have no agreement row.
+            // But new unhired projects should require hire + agreement first.
+            Project project = projectRepository.findById(projectId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+            if (project.getFreelancer() == null) {
+                throw new IllegalStateException(
+                        "Cannot perform milestone actions before hiring a freelancer");
+            }
+            // Legacy hired project with no agreement - allow
             return;
         }
+        
         if (!agreement.isFullyAccepted()) {
             throw new IllegalStateException(
                     "Both parties must accept the project agreement before continuing with milestone work");
