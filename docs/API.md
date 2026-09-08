@@ -326,6 +326,10 @@ Client, assigned freelancer, or admin. `404` if none.
 
 Client or assigned freelancer records their acceptance (idempotent per party once). Admins cannot accept.
 
+### GET `/admin/projects/{projectId}/agreement`
+
+Admin-only endpoint to view agreement text for dispute/exit evidence. Returns same format as party endpoint.
+
 ---
 
 ## Project exits (Phase B)
@@ -741,6 +745,7 @@ Common error codes:
 | 10f | POST | `/applications/{id}/withdraw` | Freelancer |
 | 10g | GET | `/projects/{id}/agreement` | Client / freelancer / admin |
 | 10h | POST | `/projects/{id}/agreement/accept` | Client / freelancer |
+| 10i | GET | `/admin/projects/{id}/agreement` | Admin (evidence) |
 | 11 | POST | `/milestones/{id}/lock-funds` | Client |
 | 12 | POST | `/milestones/{id}/submit` | Freelancer |
 | 13 | POST | `/milestones/{id}/approve` | Client |

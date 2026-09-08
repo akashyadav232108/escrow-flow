@@ -27,4 +27,9 @@ public class ProjectAgreementController {
     public ProjectAgreementResponse accept(@PathVariable Long projectId) {
         return projectAgreementService.accept(projectId);
     }
+
+    @GetMapping("/admin/projects/{projectId}/agreement")
+    public ProjectAgreementResponse getForAdmin(@PathVariable Long projectId) {
+        return projectAgreementService.getForAdmin(projectId);
+    }
 }

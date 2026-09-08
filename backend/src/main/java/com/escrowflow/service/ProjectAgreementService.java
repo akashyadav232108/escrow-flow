@@ -22,9 +22,10 @@ import java.time.Instant;
 @Slf4j
 public class ProjectAgreementService {
 
-    public static final String TERMS_VERSION = "1.0";
+    public static final String CURRENT_TERMS_VERSION = "1.0";
 
-    public static final String DEFAULT_TERMS = """
+    // Terms text snapshots by version
+    public static final String TERMS_V1_0 = """
             Escrow-Flow Project Agreement (v1.0)
 
             1. Scope — Work is defined by this project's milestones and descriptions.
@@ -55,14 +56,23 @@ public class ProjectAgreementService {
         }
         ProjectAgreement agreement = agreementRepository.save(ProjectAgreement.builder()
                 .project(project)
-                .termsVersion(TERMS_VERSION)
-                .termsText(DEFAULT_TERMS)
+                .termsVersion(CURRENT_TERMS_VERSION)
+                .termsText(getCurrentTermsText())
                 .clientAcceptedAt(clientAcceptedAt)
                 .freelancerAcceptedAt(null)
                 .createdAt(Instant.now())
                 .build());
-        log.info("Project agreement created: id={} projectId={}", agreement.getId(), project.getId());
+        log.info("Project agreement created: id={} projectId={} version={}", 
+                agreement.getId(), project.getId(), CURRENT_TERMS_VERSION);
         return agreement;
+    }
+
+    private String getCurrentTermsText() {
+        // Return terms text for current version. Add new cases when terms are updated.
+        return switch (CURRENT_TERMS_VERSION) {
+            case "1.0" -> TERMS_V1_0;
+            default -> throw new IllegalStateException("Unknown terms version: " + CURRENT_TERMS_VERSION);
+        };
     }
 
     @Transactional(readOnly = true)
@@ -70,6 +80,16 @@ public class ProjectAgreementService {
         Project project = projectRepository.findByIdWithDetails(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
         assertCanView(project);
+        ProjectAgreement agreement = agreementRepository.findByProjectId(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project agreement not found"));
+        return toResponse(agreement);
+    }
+
+    @Transactional(readOnly = true)
+    public ProjectAgreementResponse getForAdmin(Long projectId) {
+        if (!SecurityUtils.getCurrentRole().isAdminRole()) {
+            throw new ForbiddenException("Admin access required");
+        }
         ProjectAgreement agreement = agreementRepository.findByProjectId(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project agreement not found"));
         return toResponse(agreement);
@@ -117,24 +137,27 @@ public class ProjectAgreementService {
 
     @Transactional(readOnly = true)
     public void requireFullyAccepted(Long projectId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
         ProjectAgreement agreement = agreementRepository.findByProjectId(projectId).orElse(null);
         
         if (agreement == null) {
             // Legacy exemption: old hired projects (before V11) may have no agreement row.
             // But new unhired projects should require hire + agreement first.
-            Project project = projectRepository.findById(projectId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
             if (project.getFreelancer() == null) {
                 throw new IllegalStateException(
-                        "Cannot perform milestone actions before hiring a freelancer");
+                        "Please hire a freelancer before locking milestone funds");
             }
             // Legacy hired project with no agreement - allow
             return;
         }
         
         if (!agreement.isFullyAccepted()) {
+            String waitingFor = agreement.getClientAcceptedAt() == null ? "client"
+                              : agreement.getFreelancerAcceptedAt() == null ? "freelancer"
+                              : "both parties";
             throw new IllegalStateException(
-                    "Both parties must accept the project agreement before continuing with milestone work");
+                    "Waiting for " + waitingFor + " to accept the project agreement before milestone work can continue");
         }
     }
 

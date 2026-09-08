@@ -8,3 +8,8 @@ export const agreementApi = {
   accept: (projectId: number) =>
     api.post<ProjectAgreement>(`/projects/${projectId}/agreement/accept`).then((res) => res.data),
 };
+
+export const adminAgreementApi = {
+  get: (projectId: number) =>
+    api.get<ProjectAgreement>(`/admin/projects/${projectId}/agreement`).then((res) => res.data),
+};

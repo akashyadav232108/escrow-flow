@@ -132,6 +132,7 @@ Hire-time shared terms (Flyway `V11`). One row per project after client accepts 
 - No automatic penalties; acknowledgement only (evidence for disputes/exits).
 - Lock funds, submit, approve, dispute require both timestamps set (legacy projects with no row are exempt).
 - On exit resolve with `REOPEN`, delete agreement (with applications) so a new hire creates a fresh row.
+- `terms_version` tracks platform terms version at hire time (e.g., "1.0"). When platform updates terms, new projects use new version; old agreements stay immutable.
 
 ---
 
