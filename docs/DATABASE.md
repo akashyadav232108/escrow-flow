@@ -11,7 +11,10 @@ users ─────┬──── wallets
            │         │
            │         └── milestones
            │                   │
-           │                   └── escrow_holds (1:1 per milestone)
+           │                   ├── escrow_holds (1:1 per milestone)
+           │                   └── disputes (1:1 per milestone, when raised)
+           │
+           ├──── notifications
            │
            └── wallet_transactions (via wallet_id)
 ```
@@ -26,13 +29,20 @@ users ─────┬──── wallets
 | name | VARCHAR(255) | NOT NULL |
 | email | VARCHAR(255) | NOT NULL, UNIQUE |
 | password_hash | VARCHAR(255) | NOT NULL |
-| role | VARCHAR(20) | NOT NULL — `CLIENT`, `FREELANCER`, or `BOTH` |
+| role | VARCHAR(20) | NOT NULL — `CLIENT`, `FREELANCER`, `BOTH`, `ADMIN`, or `SUPER_ADMIN` |
+| account_status | VARCHAR(20) | NOT NULL — `ACTIVE`, `WARNED`, `SUSPENDED`, `DELETED` (default `ACTIVE`) |
+| created_by_user_id | BIGINT | NULL, FK → users(id) — set when an admin creates another admin |
 | created_at | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| deleted_at | TIMESTAMP | NULL — set on soft delete |
 
 **Notes**
 
-- A user can be client, freelancer, or both. For v1, a single `role` column is enough; a join table can come later if roles need to be independent.
+- Marketplace roles: `CLIENT`, `FREELANCER`, `BOTH`. Admin roles are exclusive — an admin cannot also be a client/freelancer.
+- `ADMIN` / `SUPER_ADMIN` cannot self-register via public signup. First `SUPER_ADMIN` is seeded by Flyway (`V4__admin_support.sql`).
+- Dev seed login: `superadmin@escrowflow.local` / `SuperAdmin@123` — change in production.
 - Passwords stored with BCrypt only — never plain text.
+- `created_by_user_id` tracks which admin provisioned another admin (null for self-signup and the seed super admin).
+- Suspended/deleted users cannot log in; existing JWTs are rejected by the auth filter.
 
 ---
 
@@ -97,8 +107,80 @@ users ─────┬──── wallets
 | `FUNDS_LOCKED` | Client debited, escrow hold active |
 | `SUBMITTED` | Freelancer submitted work |
 | `APPROVED` | Client approved; funds released to freelancer |
-| `DISPUTED` | Client disputed submitted work |
-| `REFUNDED` | Funds returned to client (terminal) |
+| `DISPUTED` | Dispute raised; escrow stays `HELD` until admin resolves |
+| `REFUNDED` | Funds returned to client after dispute resolution (terminal) |
+
+---
+
+### disputes
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | BIGINT | PK, AUTO_INCREMENT |
+| milestone_id | BIGINT | NOT NULL, UNIQUE, FK → milestones(id) |
+| raised_by_user_id | BIGINT | NOT NULL, FK → users(id) |
+| reason | TEXT | NOT NULL |
+| status | VARCHAR(20) | NOT NULL — `OPEN`, `RESOLVED` |
+| resolution | VARCHAR(30) | NULL — `FREELANCER_WINS`, `CLIENT_WINS` |
+| resolved_by_admin_id | BIGINT | NULL, FK → users(id) |
+| admin_note | TEXT | NULL |
+| created_at | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| resolved_at | TIMESTAMP | NULL |
+
+**Notes**
+
+- Raising a dispute does **not** move money — escrow hold stays `HELD`.
+- Admin resolve: `FREELANCER_WINS` → release to freelancer; `CLIENT_WINS` → refund client.
+- Client or assigned freelancer may raise a dispute while milestone is `SUBMITTED`.
+
+---
+
+### user_warnings
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | BIGINT | PK, AUTO_INCREMENT |
+| user_id | BIGINT | NOT NULL, FK → users(id) |
+| issued_by_admin_id | BIGINT | NOT NULL, FK → users(id) |
+| reason | TEXT | NOT NULL |
+| created_at | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+
+**Notes**
+
+- Append-only audit of warnings / suspend / delete reasons.
+- Soft delete is blocked while the user has open disputes, held escrow, or in-progress projects.
+
+---
+
+### notifications
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | BIGINT | PK, AUTO_INCREMENT |
+| user_id | BIGINT | NOT NULL, FK → users(id) |
+| type | VARCHAR(40) NOT NULL — see enum below |
+| title | VARCHAR(255) | NOT NULL |
+| message | TEXT | NOT NULL |
+| reference_type | VARCHAR(30) | NULL — `PROJECT`, `MILESTONE`, `DISPUTE` |
+| reference_id | BIGINT | NULL — id of the referenced entity |
+| is_read | BOOLEAN | NOT NULL, DEFAULT FALSE |
+| created_at | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+
+**type values**
+
+| Value | When |
+|-------|------|
+| `PROJECT_CREATED` | Client creates an open project (fan-out to freelancers) |
+| `WORK_SUBMITTED` | Freelancer submits milestone work (notify client) |
+| `DISPUTE_RAISED` | Dispute raised (notify other party + admins) |
+| `DISPUTE_RESOLVED` | Admin resolves dispute (notify client + freelancer) |
+| `REVIEW_RECEIVED` | Client leaves a review (notify freelancer; `referenceType` = `PROJECT`) |
+
+**Notes**
+
+- Rows are inserted inside the same `@Transactional` business flow (no message broker).
+- Recipients only see their own notifications via `/api/notifications`.
+- Index: `(user_id, is_read, created_at DESC)`.
 
 ---
 
@@ -159,6 +241,7 @@ CREATE INDEX idx_projects_client ON projects(client_id);
 CREATE INDEX idx_projects_freelancer ON projects(freelancer_id);
 CREATE INDEX idx_milestones_project ON milestones(project_id);
 CREATE INDEX idx_wallet_txn_wallet ON wallet_transactions(wallet_id, created_at DESC);
+CREATE INDEX idx_notifications_user_unread ON notifications(user_id, is_read, created_at DESC);
 ```
 
 ---
@@ -202,7 +285,9 @@ CREATE TABLE users (
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(20) NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_by_user_id BIGINT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by_user_id) REFERENCES users(id)
 );
 
 CREATE TABLE wallets (

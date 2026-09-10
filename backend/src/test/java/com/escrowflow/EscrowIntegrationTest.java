@@ -8,6 +8,7 @@ import com.escrowflow.domain.enums.UserRole;
 import com.escrowflow.repository.EscrowHoldRepository;
 import com.escrowflow.repository.MilestoneRepository;
 import com.escrowflow.repository.ProjectRepository;
+import com.escrowflow.repository.DisputeRepository;
 import com.escrowflow.repository.UserRepository;
 import com.escrowflow.repository.WalletRepository;
 import com.escrowflow.security.UserPrincipal;
@@ -69,6 +70,9 @@ class EscrowIntegrationTest {
 
     @Autowired
     private EscrowHoldRepository escrowHoldRepository;
+
+    @Autowired
+    private DisputeRepository disputeRepository;
 
     @Autowired
     private WalletRepository walletRepository;
@@ -151,7 +155,7 @@ class EscrowIntegrationTest {
 
     @Test
     @Transactional
-    void disputeFlow_refundsClient() {
+    void disputeFlow_freezesFundsUntilAdminResolves() {
         authService.signup(new SignupRequest("Client2", "client2@test.com", "password123", UserRole.CLIENT));
         authService.signup(new SignupRequest("Freelancer2", "freelancer2@test.com", "password123", UserRole.FREELANCER));
 
@@ -172,6 +176,7 @@ class EscrowIntegrationTest {
 
         authenticate(client.getId(), client.getEmail(), UserRole.CLIENT);
         var clientBalanceBefore = walletRepository.findByUser_Id(client.getId()).orElseThrow().getBalance();
+        var freelancerBalanceBefore = walletRepository.findByUser_Id(freelancer.getId()).orElseThrow().getBalance();
 
         escrowService.lockFunds(milestone.getId(), client.getId());
 
@@ -182,15 +187,34 @@ class EscrowIntegrationTest {
         escrowService.dispute(milestone.getId(), client.getId(), "Does not meet requirements");
 
         var milestoneAfterDispute = milestoneRepository.findById(milestone.getId()).orElseThrow();
-        assertThat(milestoneAfterDispute.getStatus()).isEqualTo(MilestoneStatus.REFUNDED);
+        assertThat(milestoneAfterDispute.getStatus()).isEqualTo(MilestoneStatus.DISPUTED);
 
-        var hold = escrowHoldRepository.findByMilestoneId(milestone.getId()).orElseThrow();
-        assertThat(hold.getStatus()).isEqualTo(EscrowHoldStatus.REFUNDED);
+        var holdAfterDispute = escrowHoldRepository.findByMilestoneId(milestone.getId()).orElseThrow();
+        assertThat(holdAfterDispute.getStatus()).isEqualTo(EscrowHoldStatus.HELD);
 
-        var clientBalanceAfter = walletRepository.findByUser_Id(client.getId()).orElseThrow().getBalance();
-        assertThat(clientBalanceAfter).isEqualByComparingTo(clientBalanceBefore);
+        var clientBalanceAfterDispute = walletRepository.findByUser_Id(client.getId()).orElseThrow().getBalance();
+        assertThat(clientBalanceAfterDispute)
+                .isEqualByComparingTo(clientBalanceBefore.subtract(new BigDecimal("2000")));
 
         assertThat(walletConsistencyService.isWalletConsistent(client.getId())).isTrue();
+
+        // Admin refunds client (CLIENT_WINS)
+        escrowService.resolveDispute(
+                disputeRepository.findByMilestoneId(milestone.getId()).orElseThrow().getId(),
+                client.getId(), // adminUserId unused for auth here — resolve doesn't check role
+                com.escrowflow.domain.enums.DisputeResolution.CLIENT_WINS,
+                "Work incomplete");
+
+        var milestoneAfterResolve = milestoneRepository.findById(milestone.getId()).orElseThrow();
+        assertThat(milestoneAfterResolve.getStatus()).isEqualTo(MilestoneStatus.REFUNDED);
+
+        var holdAfterResolve = escrowHoldRepository.findByMilestoneId(milestone.getId()).orElseThrow();
+        assertThat(holdAfterResolve.getStatus()).isEqualTo(EscrowHoldStatus.REFUNDED);
+
+        var clientBalanceFinal = walletRepository.findByUser_Id(client.getId()).orElseThrow().getBalance();
+        var freelancerBalanceFinal = walletRepository.findByUser_Id(freelancer.getId()).orElseThrow().getBalance();
+        assertThat(clientBalanceFinal).isEqualByComparingTo(clientBalanceBefore);
+        assertThat(freelancerBalanceFinal).isEqualByComparingTo(freelancerBalanceBefore);
     }
 
     @Test
@@ -236,7 +260,10 @@ class EscrowIntegrationTest {
             escrowService.dispute(milestoneId, client.getId(), "Reason " + i);
 
             var milestoneAfter = milestoneRepository.findById(milestoneId).orElseThrow();
-            assertThat(milestoneAfter.getStatus()).isEqualTo(MilestoneStatus.REFUNDED);
+            assertThat(milestoneAfter.getStatus()).isEqualTo(MilestoneStatus.DISPUTED);
+
+            var holdAfter = escrowHoldRepository.findByMilestoneId(milestoneId).orElseThrow();
+            assertThat(holdAfter.getStatus()).isEqualTo(EscrowHoldStatus.HELD);
         }
 
         Long sixthMilestoneId = milestoneIds.get(5);

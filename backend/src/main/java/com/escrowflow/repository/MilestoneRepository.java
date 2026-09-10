@@ -1,6 +1,7 @@
 package com.escrowflow.repository;
 
 import com.escrowflow.domain.Milestone;
+import com.escrowflow.domain.enums.MilestoneStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,4 +18,6 @@ public interface MilestoneRepository extends JpaRepository<Milestone, Long> {
             WHERE m.id = :id
             """)
     Optional<Milestone> findByIdWithProject(@Param("id") Long id);
+
+    long countByStatus(MilestoneStatus status);
 }

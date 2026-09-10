@@ -35,6 +35,15 @@ Create user and wallet with starting balance.
 
 `role`: `CLIENT` | `FREELANCER` | `BOTH`
 
+Admin roles (`ADMIN`, `SUPER_ADMIN`) **cannot** be self-registered here — they are provisioned separately.
+
+**Errors**
+
+| Status | When |
+|--------|------|
+| 400 | `role` is `ADMIN` or `SUPER_ADMIN` |
+| 409 | Email already registered |
+
 **Response** `201`
 
 ```json
@@ -44,7 +53,8 @@ Create user and wallet with starting balance.
     "id": 1,
     "name": "Jane Client",
     "email": "jane@example.com",
-    "role": "CLIENT"
+    "role": "CLIENT",
+    "accountStatus": "ACTIVE"
   }
 }
 ```
@@ -63,6 +73,30 @@ Create user and wallet with starting balance.
 ```
 
 **Response** `200` — same shape as signup.
+
+---
+
+### POST `/auth/change-password`
+
+Authenticated user changes their own password.
+
+**Request**
+
+```json
+{
+  "currentPassword": "securePassword123",
+  "newPassword": "evenMoreSecure456"
+}
+```
+
+**Response** `204` — no body.
+
+**Errors**
+
+| Status | When |
+|--------|------|
+| 401 | `currentPassword` does not match |
+| 400 | `newPassword` shorter than 8 characters |
 
 ---
 
@@ -149,6 +183,8 @@ Client creates a project with milestones.
 ```
 
 **Response** `201` — project with nested milestones (all `PENDING`).
+
+Also creates `PROJECT_CREATED` notifications for active freelancers (`FREELANCER` / `BOTH`), capped for demo fan-out.
 
 ---
 
@@ -242,6 +278,8 @@ Freelancer submits work.
 
 **Response** `200` — milestone with `status: SUBMITTED`.
 
+Also creates an in-app notification for the project client (`WORK_SUBMITTED`).
+
 ---
 
 ### POST `/milestones/{id}/approve`
@@ -262,9 +300,9 @@ Client approves submitted work; releases funds to freelancer.
 
 ### POST `/milestones/{id}/dispute`
 
-Client disputes submitted work; refunds locked funds.
+Client or assigned freelancer disputes submitted work. **Funds stay frozen** in escrow (`HELD`); milestone becomes `DISPUTED`. An admin must resolve it.
 
-**Request** (optional)
+**Request**
 
 ```json
 {
@@ -272,7 +310,254 @@ Client disputes submitted work; refunds locked funds.
 }
 ```
 
-**Response** `200` — milestone `DISPUTED` or `REFUNDED`, hold `REFUNDED`.
+`reason` is required.
+
+**Response** `200`
+
+```json
+{
+  "milestoneId": 1,
+  "status": "DISPUTED",
+  "escrowHoldStatus": "HELD"
+}
+```
+
+Also notifies the other party and admins (`DISPUTE_RAISED`).
+
+---
+
+## Admin
+
+Admin routes require `Authorization: Bearer <jwt>` and role `ADMIN` or `SUPER_ADMIN`.
+Non-admins receive `403 FORBIDDEN`. Admins have **no wallet** — `/wallet` endpoints return 403 for admin roles.
+
+### POST `/admin/admins`
+
+Create a new `ADMIN` account. **Super admin only.** No wallet is created. `createdBy` is set to the current super admin.
+
+**Request**
+
+```json
+{
+  "name": "Ops Admin",
+  "email": "admin@example.com",
+  "password": "securePassword123"
+}
+```
+
+**Response** `201`
+
+```json
+{
+  "id": 2,
+  "name": "Ops Admin",
+  "email": "admin@example.com",
+  "role": "ADMIN",
+  "createdAt": "2026-07-31T12:00:00Z",
+  "createdById": 1,
+  "createdByName": "Super Admin"
+}
+```
+
+**Errors**
+
+| Status | When |
+|--------|------|
+| 403 | Caller is not `SUPER_ADMIN` |
+| 409 | Email already registered |
+
+---
+
+### GET `/admin/admins`
+
+List all `ADMIN` and `SUPER_ADMIN` users (includes who created each).
+
+**Response** `200` — array of admin user objects (same shape as create response).
+
+---
+
+### GET `/admin/dashboard`
+
+Platform stats for the admin dashboard.
+
+**Response** `200`
+
+```json
+{
+  "totalUsers": 42,
+  "clients": 20,
+  "freelancers": 15,
+  "both": 5,
+  "admins": 2,
+  "warnedUsers": 3,
+  "suspendedUsers": 1,
+  "openProjects": 8,
+  "inProgressProjects": 12,
+  "completedProjects": 10,
+  "cancelledProjects": 1,
+  "totalEscrowHeld": 125000.0000,
+  "disputedMilestones": 3
+}
+```
+
+`disputedMilestones` = count of **open** disputes.
+
+---
+
+### GET `/admin/disputes`
+
+List disputes. Optional filter: `?status=OPEN` or `?status=RESOLVED`.
+
+**Response** `200` — array of dispute objects (see resolve response shape).
+
+---
+
+### GET `/admin/disputes/{id}`
+
+Dispute detail including project parties, submitted work note, and escrow status.
+
+---
+
+### POST `/admin/disputes/{id}/resolve`
+
+Admin decides the dispute. Money moves only here:
+
+| `decision` | Effect |
+|------------|--------|
+| `FREELANCER_WINS` | Escrow released to freelancer; milestone `APPROVED` |
+| `CLIENT_WINS` | Escrow refunded to client; milestone `REFUNDED` |
+
+**Request**
+
+```json
+{
+  "decision": "FREELANCER_WINS",
+  "note": "Deliverable matches the milestone scope"
+}
+```
+
+**Response** `200` — updated dispute object with `status: RESOLVED` and resolution fields set.
+
+Also notifies the project client and freelancer (`DISPUTE_RESOLVED`).
+
+---
+
+### GET `/admin/users`
+
+List marketplace users (`CLIENT` / `FREELANCER` / `BOTH`). Optional `?status=WARNED|SUSPENDED|ACTIVE|DELETED`.
+When `status` is omitted, deleted users are excluded.
+
+---
+
+### GET `/admin/users/{id}`
+
+User detail including warning history.
+
+---
+
+### POST `/admin/users/{id}/warnings`
+
+Issue a warning. If the user is `ACTIVE`, status becomes `WARNED`.
+
+**Request**
+
+```json
+{
+  "reason": "Abusive messaging toward freelancer"
+}
+```
+
+---
+
+### POST `/admin/users/{id}/suspend`
+
+Suspend account (blocks login and JWT use). Requires `reason`.
+
+---
+
+### POST `/admin/users/{id}/unsuspend`
+
+Restore suspended user to `WARNED` (if they have warnings) or `ACTIVE`.
+
+---
+
+### POST `/admin/users/{id}/delete`
+
+Soft-delete account (`DELETED` + `deletedAt`). Blocked if the user has open disputes, held escrow, or in-progress projects.
+
+**Request**
+
+```json
+{
+  "reason": "Repeated policy violations after warnings"
+}
+```
+
+---
+
+## Notifications
+
+In-app notifications for the authenticated user. Rows are written in the same DB transaction as the business action (no Kafka). Admins may receive dispute alerts even though they have no wallet.
+
+### GET `/notifications`
+
+Paginated list for the current user (newest first).
+
+**Query params**: `page` (default 0), `size` (default 20)
+
+**Response** `200`
+
+```json
+{
+  "content": [
+    {
+      "id": 1,
+      "type": "WORK_SUBMITTED",
+      "title": "Work submitted",
+      "message": "Freelancer submitted work for milestone \"Wireframes\" on project \"Website redesign\".",
+      "referenceType": "PROJECT",
+      "referenceId": 12,
+      "read": false,
+      "createdAt": "2026-07-31T12:00:00Z"
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 1,
+  "totalPages": 1
+}
+```
+
+`type`: `PROJECT_CREATED` | `WORK_SUBMITTED` | `DISPUTE_RAISED` | `DISPUTE_RESOLVED` | `REVIEW_RECEIVED`  
+`referenceType`: `PROJECT` | `MILESTONE` | `DISPUTE` (nullable)
+
+### GET `/notifications/unread-count`
+
+**Response** `200`
+
+```json
+{
+  "unreadCount": 3
+}
+```
+
+### POST `/notifications/{id}/read`
+
+Mark one notification as read. Only the recipient may update their own row (`404` if missing or not owned).
+
+**Response** `200` — updated `NotificationResponse`.
+
+### POST `/notifications/read-all`
+
+Mark all of the current user's unread notifications as read.
+
+**Response** `200`
+
+```json
+{
+  "unreadCount": 0
+}
+```
 
 ---
 
@@ -294,10 +579,13 @@ Common error codes:
 | `INSUFFICIENT_BALANCE` | 400 |
 | `WALLET_BUSY` | 409 |
 | `IDEMPOTENCY_KEY_CONFLICT` | 409 |
+| `INVALID_CURRENT_PASSWORD` | 401 |
 | `CONCURRENT_MODIFICATION` | 409 |
 | `INVALID_REQUEST` | 400 |
 | `UNAUTHORIZED` | 401 |
 | `FORBIDDEN` | 403 |
+| `ACCOUNT_SUSPENDED` | 403 |
+| `ACCOUNT_DELETED` | 403 |
 | `RATE_LIMIT_EXCEEDED` | 429 |
 
 ---
@@ -308,14 +596,31 @@ Common error codes:
 |---|--------|------|------|
 | 1 | POST | `/auth/signup` | Public |
 | 2 | POST | `/auth/login` | Public |
-| 3 | GET | `/wallet` | Auth |
-| 4 | POST | `/wallet/add-funds` | Auth |
-| 5 | GET | `/wallet/transactions` | Auth |
-| 6 | POST | `/projects` | Client |
-| 7 | GET | `/projects` | Auth |
-| 8 | GET | `/projects/{id}` | Auth |
-| 9 | POST | `/projects/{id}/accept` | Freelancer |
-| 10 | POST | `/milestones/{id}/lock-funds` | Client |
-| 11 | POST | `/milestones/{id}/submit` | Freelancer |
-| 12 | POST | `/milestones/{id}/approve` | Client |
-| 13 | POST | `/milestones/{id}/dispute` | Client |
+| 3 | POST | `/auth/change-password` | Auth |
+| 4 | GET | `/wallet` | Auth |
+| 5 | POST | `/wallet/add-funds` | Auth |
+| 6 | GET | `/wallet/transactions` | Auth |
+| 7 | POST | `/projects` | Client |
+| 8 | GET | `/projects` | Auth |
+| 9 | GET | `/projects/{id}` | Auth |
+| 10 | POST | `/projects/{id}/accept` | Freelancer |
+| 11 | POST | `/milestones/{id}/lock-funds` | Client |
+| 12 | POST | `/milestones/{id}/submit` | Freelancer |
+| 13 | POST | `/milestones/{id}/approve` | Client |
+| 14 | POST | `/milestones/{id}/dispute` | Client / Freelancer |
+| 15 | POST | `/admin/admins` | Super admin |
+| 16 | GET | `/admin/admins` | Admin |
+| 17 | GET | `/admin/dashboard` | Admin |
+| 18 | GET | `/admin/disputes` | Admin |
+| 19 | GET | `/admin/disputes/{id}` | Admin |
+| 20 | POST | `/admin/disputes/{id}/resolve` | Admin |
+| 21 | GET | `/admin/users` | Admin |
+| 22 | GET | `/admin/users/{id}` | Admin |
+| 23 | POST | `/admin/users/{id}/warnings` | Admin |
+| 24 | POST | `/admin/users/{id}/suspend` | Admin |
+| 25 | POST | `/admin/users/{id}/unsuspend` | Admin |
+| 26 | POST | `/admin/users/{id}/delete` | Admin |
+| 27 | GET | `/notifications` | Auth |
+| 28 | GET | `/notifications/unread-count` | Auth |
+| 29 | POST | `/notifications/{id}/read` | Auth |
+| 30 | POST | `/notifications/read-all` | Auth |

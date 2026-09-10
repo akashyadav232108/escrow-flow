@@ -14,8 +14,12 @@ import com.escrowflow.web.dto.AuthResponse;
 import com.escrowflow.web.dto.LoginRequest;
 import com.escrowflow.web.dto.SignupRequest;
 import com.escrowflow.web.dto.UserResponse;
+import com.escrowflow.web.dto.ChangePasswordRequest;
+import com.escrowflow.web.exception.AccountNotActiveException;
 import com.escrowflow.web.exception.EmailAlreadyExistsException;
 import com.escrowflow.web.exception.InvalidCredentialsException;
+import com.escrowflow.web.exception.InvalidCurrentPasswordException;
+import com.escrowflow.web.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -51,6 +55,11 @@ public class AuthService {
 
     @Transactional
     public AuthResponse signup(SignupRequest request) {
+        if (request.role().isAdminRole()) {
+            throw new IllegalArgumentException(
+                    "Cannot self-register as ADMIN or SUPER_ADMIN. Use marketplace roles only.");
+        }
+
         if (userRepository.existsByEmail(request.email())) {
             throw new EmailAlreadyExistsException(request.email());
         }
@@ -89,12 +98,42 @@ public class AuthService {
             throw new InvalidCredentialsException();
         }
 
+        if (user.getAccountStatus() == com.escrowflow.domain.enums.AccountStatus.SUSPENDED) {
+            throw new AccountNotActiveException(
+                    "ACCOUNT_SUSPENDED", "Your account has been suspended. Contact support.");
+        }
+        if (user.getAccountStatus() == com.escrowflow.domain.enums.AccountStatus.DELETED) {
+            throw new AccountNotActiveException(
+                    "ACCOUNT_DELETED", "This account has been removed.");
+        }
+
         return buildAuthResponse(user);
+    }
+
+    @Transactional
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new InvalidCurrentPasswordException();
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+        log.info("Password changed: userId={}", userId);
     }
 
     private AuthResponse buildAuthResponse(User user) {
         String token = jwtService.generateToken(user);
-        UserResponse userResponse = new UserResponse(user.getId(), user.getName(), user.getEmail(), user.getRole());
+        UserResponse userResponse =
+                new UserResponse(
+                        user.getId(),
+                        user.getName(),
+                        user.getEmail(),
+                        user.getRole(),
+                        user.getAccountStatus(),
+                        user.getCreatedAt());
         return new AuthResponse(token, userResponse);
     }
 }

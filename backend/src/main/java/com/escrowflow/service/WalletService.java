@@ -6,10 +6,12 @@ import com.escrowflow.domain.enums.ReferenceType;
 import com.escrowflow.domain.enums.TransactionType;
 import com.escrowflow.repository.WalletRepository;
 import com.escrowflow.repository.WalletTransactionRepository;
+import com.escrowflow.security.SecurityUtils;
 import com.escrowflow.web.dto.AddFundsResponse;
 import com.escrowflow.web.dto.TransactionHistoryResponse;
 import com.escrowflow.web.dto.TransactionResponse;
 import com.escrowflow.web.dto.WalletResponse;
+import com.escrowflow.web.exception.ForbiddenException;
 import com.escrowflow.web.exception.InsufficientBalanceException;
 import com.escrowflow.web.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
@@ -37,12 +39,14 @@ public class WalletService {
 
     @Transactional(readOnly = true)
     public WalletResponse getWallet(Long userId) {
+        rejectAdminWalletAccess();
         Wallet wallet = findWalletByUserId(userId);
         return toResponse(wallet);
     }
 
     @Transactional
     public AddFundsResponse addFunds(Long userId, BigDecimal amount) {
+        rejectAdminWalletAccess();
         Wallet wallet = findWalletByUserId(userId);
         WalletTransaction transaction = credit(wallet, amount, ReferenceType.ADD_FUNDS, null);
         log.info("Funds added: userId={} amount={} newBalance={}", userId, amount, wallet.getBalance());
@@ -91,6 +95,7 @@ public class WalletService {
 
     @Transactional(readOnly = true)
     public TransactionHistoryResponse getTransactions(Long userId, int page, int size) {
+        rejectAdminWalletAccess();
         Wallet wallet = findWalletByUserId(userId);
         Pageable pageable = PageRequest.of(page, size);
         Page<WalletTransaction> transactionPage = walletTransactionRepository
@@ -112,6 +117,12 @@ public class WalletService {
     public Wallet findWalletByUserId(Long userId) {
         return walletRepository.findByUser_Id(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Wallet not found for user"));
+    }
+
+    private void rejectAdminWalletAccess() {
+        if (SecurityUtils.getCurrentRole().isAdminRole()) {
+            throw new ForbiddenException("Admins do not have wallet access");
+        }
     }
 
     private WalletResponse toResponse(Wallet wallet) {
