@@ -229,9 +229,142 @@ Project detail with milestones.
 
 ### POST `/projects/{id}/accept`
 
-Freelancer accepts an `OPEN` project.
+**Legacy** — Freelancer instantly accepts an `OPEN` project (first-come). Prefer the applications flow below for hiring.
 
 **Response** `200` — project with `status: IN_PROGRESS`, `freelancer_id` set.
+
+---
+
+## Project applications
+
+Freelancers apply to `OPEN` projects; the client accepts one or declines. Rows share the business transaction (no Kafka).
+
+### POST `/projects/{projectId}/applications`
+
+Freelancer applies. Optional body:
+
+```json
+{ "message": "I can start this week." }
+```
+
+**Response** `201`
+
+```json
+{
+  "id": 1,
+  "projectId": 5,
+  "projectTitle": "Website redesign",
+  "freelancerId": 2,
+  "freelancerName": "Bob Dev",
+  "status": "PENDING",
+  "message": "I can start this week.",
+  "createdAt": "2026-08-03T12:00:00Z",
+  "updatedAt": "2026-08-03T12:00:00Z"
+}
+```
+
+Also notifies the project client (`APPLICATION_RECEIVED`).
+
+### GET `/projects/{projectId}/applications`
+
+Client (or assigned freelancer) lists applications for the project.
+
+**Response** `200` — array of `ApplicationResponse`.
+
+### GET `/applications/mine`
+
+Current freelancer's applications (newest first).
+
+### POST `/applications/{applicationId}/accept`
+
+Client accepts a `PENDING` application → project `IN_PROGRESS`, other pending applications declined, and creates a **project agreement** with the client already marked accepted. Notifies freelancer (`APPLICATION_ACCEPTED`).
+
+**Body** (required):
+
+```json
+{ "acceptedTerms": true }
+```
+
+`acceptedTerms` must be `true` (`@AssertTrue`). Freelancer must still accept the agreement before lock/submit/approve/dispute.
+
+### POST `/applications/{applicationId}/decline`
+
+Client declines a `PENDING` application. Notifies freelancer (`APPLICATION_DECLINED`).
+
+### POST `/applications/{applicationId}/withdraw`
+
+Freelancer withdraws their own `PENDING` application.
+
+---
+
+## Project agreements (hire-time terms)
+
+Shared terms created when the client accepts an application. **No automatic penalties** — acknowledgement only; used as evidence in disputes/exits. Milestone lock, submit, approve, and dispute stay blocked until **both** parties have accepted. Legacy projects without an agreement row are allowed to continue.
+
+### GET `/projects/{projectId}/agreement`
+
+Client, assigned freelancer, or admin. `404` if none.
+
+**Response** `200`:
+
+```json
+{
+  "id": 1,
+  "projectId": 10,
+  "termsVersion": "1.0",
+  "termsText": "...",
+  "clientAcceptedAt": "2026-08-17T06:00:00Z",
+  "freelancerAcceptedAt": null,
+  "clientAccepted": true,
+  "freelancerAccepted": false,
+  "fullyAccepted": false,
+  "createdAt": "2026-08-17T06:00:00Z"
+}
+```
+
+### POST `/projects/{projectId}/agreement/accept`
+
+Client or assigned freelancer records their acceptance (idempotent per party once). Admins cannot accept.
+
+### GET `/admin/projects/{projectId}/agreement`
+
+Admin-only endpoint to view agreement text for dispute/exit evidence. Returns same format as party endpoint.
+
+---
+
+## Project exits (Phase B)
+
+Client or assigned freelancer can request to end an `IN_PROGRESS` project. Project becomes `EXIT_DISPUTED` (milestone actions frozen). Admin settles each **held** escrow milestone by choosing how much goes to the freelancer (rest refunds to client), then **cancels** or **reopens** the project. Admin decision is final.
+
+### POST `/projects/{projectId}/exit`
+
+Body: `{ "reason": "..." }` → `201` `ProjectExitResponse`.
+
+### GET `/projects/{projectId}/exit`
+
+Open exit for the project (parties only).
+
+### GET `/project-exits/{exitId}`
+
+Exit detail (party or admin).
+
+### Admin
+
+- `GET /admin/project-exits?status=`
+- `GET /admin/project-exits/{id}`
+- `POST /admin/project-exits/{id}/resolve`
+
+```json
+{
+  "projectOutcome": "CANCELLED",
+  "adminNote": "Partial work credited",
+  "settlements": [
+    { "milestoneId": 12, "freelancerAmount": 2000.0000 }
+  ]
+}
+```
+
+`freelancerAmount` must be between `0` and the snapshotted `holdAmount`. Client refund = hold − freelancer. Full freelancer → hold `RELEASED` / milestone `APPROVED`; full client → `REFUNDED`; both &gt; 0 → hold `SPLIT` / milestone `SETTLED`.
 
 ---
 
@@ -239,7 +372,7 @@ Freelancer accepts an `OPEN` project.
 
 ### POST `/milestones/{id}/lock-funds`
 
-Client locks escrow for a `PENDING` milestone.
+Client locks escrow for a `PENDING` milestone, or **re-locks** a `REFUNDED` milestone (reuses the same `escrow_holds` row: `REFUNDED` → `HELD`; wallet history kept via new `ESCROW_LOCK` debit).
 
 **Headers**: `Idempotency-Key: <uuid>` (required)
 
@@ -528,8 +661,8 @@ Paginated list for the current user (newest first).
 }
 ```
 
-`type`: `PROJECT_CREATED` | `WORK_SUBMITTED` | `DISPUTE_RAISED` | `DISPUTE_RESOLVED` | `REVIEW_RECEIVED`  
-`referenceType`: `PROJECT` | `MILESTONE` | `DISPUTE` (nullable)
+`type`: `PROJECT_CREATED` | `WORK_SUBMITTED` | `DISPUTE_RAISED` | `DISPUTE_RESOLVED` | `REVIEW_RECEIVED` | `APPLICATION_RECEIVED` | `APPLICATION_ACCEPTED` | `APPLICATION_DECLINED` | `PROJECT_EXIT_RAISED` | `PROJECT_EXIT_RESOLVED`  
+`referenceType`: `PROJECT` | `MILESTONE` | `DISPUTE` | `PROJECT_EXIT` (nullable)
 
 ### GET `/notifications/unread-count`
 
@@ -603,7 +736,16 @@ Common error codes:
 | 7 | POST | `/projects` | Client |
 | 8 | GET | `/projects` | Auth |
 | 9 | GET | `/projects/{id}` | Auth |
-| 10 | POST | `/projects/{id}/accept` | Freelancer |
+| 10 | POST | `/projects/{id}/accept` | Freelancer (legacy) |
+| 10a | POST | `/projects/{id}/applications` | Freelancer |
+| 10b | GET | `/projects/{id}/applications` | Client |
+| 10c | GET | `/applications/mine` | Freelancer |
+| 10d | POST | `/applications/{id}/accept` | Client (body: acceptedTerms) |
+| 10e | POST | `/applications/{id}/decline` | Client |
+| 10f | POST | `/applications/{id}/withdraw` | Freelancer |
+| 10g | GET | `/projects/{id}/agreement` | Client / freelancer / admin |
+| 10h | POST | `/projects/{id}/agreement/accept` | Client / freelancer |
+| 10i | GET | `/admin/projects/{id}/agreement` | Admin (evidence) |
 | 11 | POST | `/milestones/{id}/lock-funds` | Client |
 | 12 | POST | `/milestones/{id}/submit` | Freelancer |
 | 13 | POST | `/milestones/{id}/approve` | Client |

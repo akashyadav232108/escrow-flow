@@ -4,6 +4,7 @@ import CreateProjectForm from '../components/CreateProjectForm';
 import ProjectCard from '../components/ProjectCard';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchProjects } from '../store/slices/projectsSlice';
+import { clearProjectDraft, hasProjectDraft } from '../utils/projectDraft';
 import { isAdminRole } from '../utils/roles';
 
 export default function DashboardPage() {
@@ -17,6 +18,12 @@ export default function DashboardPage() {
       dispatch(fetchProjects(undefined));
     }
   }, [dispatch, user?.role]);
+
+  useEffect(() => {
+    if (user?.id && hasProjectDraft(user.id)) {
+      setShowCreateForm(true);
+    }
+  }, [user?.id]);
 
   if (isAdminRole(user?.role)) {
     return <Navigate to="/admin" replace />;
@@ -46,7 +53,14 @@ export default function DashboardPage() {
           <button
             type="button"
             className={showCreateForm ? 'btn-secondary' : 'btn-primary'}
-            onClick={() => setShowCreateForm((prev) => !prev)}
+            onClick={() => {
+              if (showCreateForm) {
+                if (user?.id) clearProjectDraft(user.id);
+                setShowCreateForm(false);
+                return;
+              }
+              setShowCreateForm(true);
+            }}
           >
             {showCreateForm ? 'Cancel' : '+ New project'}
           </button>

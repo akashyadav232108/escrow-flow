@@ -9,10 +9,16 @@ users ─────┬──── wallets
            │
            ├──── projects (client_id, freelancer_id)
            │         │
-           │         └── milestones
-           │                   │
-           │                   ├── escrow_holds (1:1 per milestone)
-           │                   └── disputes (1:1 per milestone, when raised)
+           │         ├── milestones
+           │         │         │
+           │         │         ├── escrow_holds (1:1 per milestone)
+           │         │         └── disputes (1:1 per milestone, when raised)
+           │         │
+           │         ├── project_applications
+           │         ├── project_agreements (1:1 on hire)
+           │         └── project_exits / settlements
+           │
+           ├──── reviews
            │
            ├──── notifications
            │
@@ -73,15 +79,60 @@ users ─────┬──── wallets
 | freelancer_id | BIGINT | NULL, FK → users(id) |
 | title | VARCHAR(255) | NOT NULL |
 | description | TEXT | |
-| status | VARCHAR(20) | NOT NULL — `OPEN`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED` |
+| status | VARCHAR(20) | NOT NULL — `OPEN`, `IN_PROGRESS`, `EXIT_DISPUTED`, `COMPLETED`, `CANCELLED` |
 | created_at | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
 
 **Status transitions**
 
-- `OPEN` — created, no freelancer yet
-- `IN_PROGRESS` — freelancer accepted
+- `OPEN` — created, no freelancer yet (freelancers may apply)
+- `IN_PROGRESS` — client accepted an application (or legacy instant accept)
+- `EXIT_DISPUTED` — project exit open; milestone money actions frozen until admin resolves
 - `COMPLETED` — all milestones approved (optional auto-transition)
-- `CANCELLED` — abandoned before work starts
+- `CANCELLED` — abandoned / exit cancelled
+
+---
+
+### project_applications
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | BIGINT | PK, AUTO_INCREMENT |
+| project_id | BIGINT | NOT NULL, FK → projects(id) |
+| freelancer_id | BIGINT | NOT NULL, FK → users(id) |
+| status | VARCHAR(20) | NOT NULL — `PENDING`, `ACCEPTED`, `DECLINED`, `WITHDRAWN` |
+| message | TEXT | NULL — optional cover note |
+| created_at | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
+| updated_at | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP |
+
+**Rules**
+
+- `UNIQUE(project_id, freelancer_id)` — one application per freelancer per project.
+- Apply only while project is `OPEN` and `freelancer_id` is null.
+- Client accept: set application `ACCEPTED`, assign `projects.freelancer_id`, project → `IN_PROGRESS`, decline other `PENDING` rows.
+- Indexes: `(project_id, status)`, `(freelancer_id, created_at DESC)`.
+
+---
+
+### project_agreements
+
+Hire-time shared terms (Flyway `V11`). One row per project after client accepts an application.
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | BIGINT | PK, AUTO_INCREMENT |
+| project_id | BIGINT | NOT NULL, UNIQUE, FK → projects(id) |
+| terms_version | VARCHAR(20) | NOT NULL |
+| terms_text | TEXT | NOT NULL — snapshot at hire |
+| client_accepted_at | TIMESTAMP | NULL — set at hire when client accepts terms |
+| freelancer_accepted_at | TIMESTAMP | NULL — set when freelancer accepts |
+| created_at | TIMESTAMP | NOT NULL |
+
+**Rules**
+
+- No automatic penalties; acknowledgement only (evidence for disputes/exits).
+- Lock funds, submit, approve, dispute require both timestamps set (legacy projects with no row are exempt).
+- On exit resolve with `REOPEN`, delete agreement (with applications) so a new hire creates a fresh row.
+- `terms_version` tracks platform terms version at hire time (e.g., "1.0"). When platform updates terms, new projects use new version; old agreements stay immutable.
 
 ---
 
@@ -108,7 +159,28 @@ users ─────┬──── wallets
 | `SUBMITTED` | Freelancer submitted work |
 | `APPROVED` | Client approved; funds released to freelancer |
 | `DISPUTED` | Dispute raised; escrow stays `HELD` until admin resolves |
-| `REFUNDED` | Funds returned to client after dispute resolution (terminal) |
+| `REFUNDED` | Funds returned to client after dispute/exit; client may **re-lock** (reuse same hold → `HELD`) |
+| `SETTLED` | Project-exit partial split (terminal) |
+
+---
+
+### project_exits
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | BIGINT | PK |
+| project_id | BIGINT | NOT NULL, FK → projects |
+| raised_by_user_id | BIGINT | NOT NULL, FK → users |
+| reason | TEXT | NOT NULL |
+| status | VARCHAR(20) | `OPEN`, `RESOLVED` |
+| project_outcome | VARCHAR(20) | NULL — `CANCELLED`, `REOPEN` on resolve |
+| admin_note | TEXT | NULL |
+| resolved_by_admin_id | BIGINT | NULL |
+| created_at / resolved_at | TIMESTAMP | |
+
+### project_exit_settlements
+
+One row per held milestone at raise time: `hold_amount` snapshot; on resolve `freelancer_amount` + `client_refund_amount` (sum = hold).
 
 ---
 
@@ -175,6 +247,11 @@ users ─────┬──── wallets
 | `DISPUTE_RAISED` | Dispute raised (notify other party + admins) |
 | `DISPUTE_RESOLVED` | Admin resolves dispute (notify client + freelancer) |
 | `REVIEW_RECEIVED` | Client leaves a review (notify freelancer; `referenceType` = `PROJECT`) |
+| `APPLICATION_RECEIVED` | Freelancer applies (notify client; `referenceType` = `PROJECT`) |
+| `APPLICATION_ACCEPTED` | Client accepts application (notify freelancer) |
+| `APPLICATION_DECLINED` | Client declines application (notify freelancer) |
+| `PROJECT_EXIT_RAISED` | Project exit requested (other party + admins) |
+| `PROJECT_EXIT_RESOLVED` | Admin resolved project exit (client + freelancer) |
 
 **Notes**
 
@@ -200,7 +277,8 @@ users ─────┬──── wallets
 
 - `UNIQUE(milestone_id)` — at most one hold per milestone.
 - `amount` should match `milestones.amount` at lock time.
-- Terminal states: `RELEASED` (paid to freelancer), `REFUNDED` (returned to client).
+- Terminal states: `RELEASED` (paid to freelancer). `REFUNDED` may be re-locked (same hold row → `HELD` again); wallet tx history is append-only.
+- `SPLIT` — project-exit partial payout (terminal for that settlement round).
 
 ---
 

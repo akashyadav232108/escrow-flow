@@ -112,7 +112,7 @@
 - [ ] End-to-end smoke test on live URL
 - [ ] Root README quick-start verified
 
-**Exit criteria**: Shareable URL; interviewer can signup and run through escrow flow.
+**Exit criteria**: Shareable URL; users can signup and run through the complete escrow flow.
 
 ---
 
@@ -122,6 +122,9 @@
 - [ ] File upload for milestone deliverables (S3)
 - [x] Admin dispute resolution panel
 - [x] In-app notifications (MySQL rows + poll; no Kafka)
+- [x] Project applications (apply / client accept-decline; Phase A hiring)
+- [x] Project agreements (hire-time terms; both accept; collapse UI; admin view for evidence; versioned terms)
+- [x] Project exit disputes (admin per-milestone escrow split; final)
 - [ ] Email notifications on submit/approve
 - [ ] GitHub Actions CI (build + test on PR)
 - [ ] OpenAPI / Swagger UI for API docs

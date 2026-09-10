@@ -7,6 +7,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -15,6 +16,7 @@ import java.util.Date;
 import java.util.Map;
 
 @Service
+@Slf4j
 public class JwtService {
 
     private final AppProperties appProperties;
@@ -66,6 +68,7 @@ public class JwtService {
             Claims claims = parseClaims(token);
             return claims.getExpiration().after(new Date());
         } catch (Exception ex) {
+            log.debug("JWT validation failed: {}", ex.getMessage());
             return false;
         }
     }

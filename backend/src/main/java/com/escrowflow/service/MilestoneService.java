@@ -5,6 +5,7 @@ import com.escrowflow.domain.Project;
 import com.escrowflow.domain.enums.MilestoneStatus;
 import com.escrowflow.domain.enums.NotificationReferenceType;
 import com.escrowflow.domain.enums.NotificationType;
+import com.escrowflow.domain.enums.ProjectStatus;
 import com.escrowflow.repository.MilestoneRepository;
 import com.escrowflow.web.exception.ForbiddenException;
 import com.escrowflow.web.exception.InvalidMilestoneStateException;
@@ -21,10 +22,15 @@ public class MilestoneService {
 
     private final MilestoneRepository milestoneRepository;
     private final NotificationService notificationService;
+    private final ProjectAgreementService projectAgreementService;
 
-    public MilestoneService(MilestoneRepository milestoneRepository, NotificationService notificationService) {
+    public MilestoneService(
+            MilestoneRepository milestoneRepository,
+            NotificationService notificationService,
+            ProjectAgreementService projectAgreementService) {
         this.milestoneRepository = milestoneRepository;
         this.notificationService = notificationService;
+        this.projectAgreementService = projectAgreementService;
     }
 
     @Transactional
@@ -37,6 +43,12 @@ public class MilestoneService {
         if (project.getFreelancer() == null || !project.getFreelancer().getId().equals(freelancerUserId)) {
             throw new ForbiddenException("Only the assigned freelancer can submit work");
         }
+
+        if (project.getStatus() == ProjectStatus.EXIT_DISPUTED) {
+            throw new IllegalStateException("Cannot submit work while project exit is under admin review");
+        }
+
+        projectAgreementService.requireFullyAccepted(project.getId());
 
         if (milestone.getStatus() != MilestoneStatus.FUNDS_LOCKED) {
             throw new InvalidMilestoneStateException(

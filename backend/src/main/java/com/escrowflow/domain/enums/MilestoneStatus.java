@@ -6,5 +6,6 @@ public enum MilestoneStatus {
     SUBMITTED,
     APPROVED,
     DISPUTED,
-    REFUNDED
+    REFUNDED,
+    SETTLED
 }

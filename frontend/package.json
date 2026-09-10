@@ -1,7 +1,9 @@
 {
-  "name": "frontend",
+  "name": "escrow-flow-frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "React frontend for Escrow-Flow milestone-based payment system",
+  "author": "Akash Yadav",
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -8,6 +8,7 @@ const STATUS_CLASS: Record<Milestone['status'], string> = {
   APPROVED: 'status-approved',
   DISPUTED: 'status-disputed',
   REFUNDED: 'status-refunded',
+  SETTLED: 'status-settled',
 };
 
 interface MilestoneListProps {
@@ -15,6 +16,23 @@ interface MilestoneListProps {
   projectId: number;
   isClient: boolean;
   isFreelancer: boolean;
+  actionsDisabled?: boolean;
+}
+
+const urlPattern = /(https?:\/\/[^\s]+)/g;
+const singleUrlPattern = /^https?:\/\/[^\s]+$/;
+
+function renderSubmittedNote(note: string) {
+  return note.split(urlPattern).map((part, index) => {
+    if (singleUrlPattern.test(part)) {
+      return (
+        <a key={`${part}-${index}`} href={part} target="_blank" rel="noreferrer">
+          {part}
+        </a>
+      );
+    }
+    return <span key={index}>{part}</span>;
+  });
 }
 
 export default function MilestoneList({
@@ -22,22 +40,33 @@ export default function MilestoneList({
   projectId,
   isClient,
   isFreelancer,
+  actionsDisabled = false,
 }: MilestoneListProps) {
   return (
     <ul className="milestone-list">
       {milestones.map((milestone) => (
         <li key={milestone.id} className="milestone-row">
-          <div className="milestone-info">
-            <span className="milestone-title">{milestone.title}</span>
-            <span className={`status-badge ${STATUS_CLASS[milestone.status]}`}>{milestone.status}</span>
-            <span className="milestone-amount">₹{milestone.amount}</span>
+          <div className="milestone-main">
+            <div className="milestone-info">
+              <span className="milestone-title">{milestone.title}</span>
+              <span className={`status-badge ${STATUS_CLASS[milestone.status]}`}>{milestone.status}</span>
+              <span className="milestone-amount">₹{milestone.amount}</span>
+            </div>
+            {milestone.submittedNote && (
+              <div className="milestone-submitted-note">
+                <span className="milestone-submitted-label">Submitted work</span>
+                <p>{renderSubmittedNote(milestone.submittedNote)}</p>
+              </div>
+            )}
           </div>
-          <MilestoneActions
-            milestone={milestone}
-            projectId={projectId}
-            isClient={isClient}
-            isFreelancer={isFreelancer}
-          />
+          {!actionsDisabled && (
+            <MilestoneActions
+              milestone={milestone}
+              projectId={projectId}
+              isClient={isClient}
+              isFreelancer={isFreelancer}
+            />
+          )}
         </li>
       ))}
     </ul>

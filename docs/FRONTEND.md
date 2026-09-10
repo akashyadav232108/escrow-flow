@@ -167,9 +167,10 @@ Show actions based on **role + milestone.status** (mirror backend rules):
 | Role | Status | Action |
 |------|--------|--------|
 | Client | PENDING | Lock funds |
+| Client | REFUNDED | Lock funds again (reuse hold) |
 | Freelancer | FUNDS_LOCKED | Submit work |
 | Client | SUBMITTED | Approve / Dispute |
-| Any | terminal | None (read-only) |
+| Any | APPROVED / SETTLED | None (read-only) |
 
 #### Lock funds — idempotency
 
@@ -240,6 +241,9 @@ Disable action buttons while request in flight — prevents double-click (idempo
 - [ ] Wallet page + transaction history
 - [ ] In-app notification bell (poll unread count, mark read, navigate)
 - [ ] Freelancer reviews (leave review after approve, rating on cards/profile)
+- [ ] Project applications (apply / client accept-decline on project detail)
+- [ ] Project agreement (hire terms checkbox; both accept before milestone work; collapse after both accept)
+- [ ] Project exit (raise exit; admin per-milestone split)
 - [ ] Idempotency key on lock funds
 - [ ] Refetch wallet after escrow actions
 - [ ] Basic responsive layout

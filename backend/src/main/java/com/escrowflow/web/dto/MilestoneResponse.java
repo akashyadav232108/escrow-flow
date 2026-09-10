@@ -9,6 +9,7 @@ public record MilestoneResponse(
         String title,
         String description,
         BigDecimal amount,
-        MilestoneStatus status
+        MilestoneStatus status,
+        String submittedNote
 ) {
 }

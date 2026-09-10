@@ -20,7 +20,7 @@ server:
 app:
   jwt:
     secret: change-me-use-a-long-random-secret-at-least-32-characters
-    expiration-ms: 86400000
+    expiration-ms: 604800000  # 7 days for dev convenience (was 24h)
   wallet:
     starting-balance: 10000
 

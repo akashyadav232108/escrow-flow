@@ -52,7 +52,7 @@ A milestone-based escrow system for freelance payments. Clients lock funds per m
 
 ```bash
 cd backend
-cp src/main/resources/application-example.yml application-local.yml
+cp src/main/resources/application-example.yaml application-local.yaml
 # Configure DB URL, Redis host, JWT secret
 ./mvnw spring-boot:run
 ```
@@ -70,13 +70,26 @@ npm run dev
 
 App: `http://localhost:5173`
 
-## Interview talking points
+## Key features
 
-1. Atomic multi-table writes (`@Transactional`) for lock / release / refund
-2. Lost-update prevention: Redis lock + optimistic locking (`@Version`)
-3. Idempotency keys on fund-lock (double-click / network retry safe)
-4. Milestone state machine enforced in the service layer
-5. Audit invariant: `wallet.balance == SUM(transactions)`
+- **Atomic transactions**: Multi-table writes with `@Transactional` for lock/release/refund operations ensuring data consistency
+- **Concurrency safety**: Redis distributed locks + JPA optimistic locking (`@Version`) to prevent lost updates in high-concurrency scenarios
+- **Idempotency**: Retry-safe fund-lock operations using client-generated idempotency keys (protects against double-clicks and network failures)
+- **State machine enforcement**: Milestone state transitions validated at service layer, never trusting frontend input
+- **Audit trail**: Append-only transaction log with balance invariant verification (`wallet.balance == SUM(transactions)`)
+- **Security**: Stateless JWT authentication with role-based access control
+
+## Architecture highlights
+
+This project demonstrates real-world patterns for building reliable financial systems:
+
+- Distributed locking for wallet operations
+- Optimistic concurrency control with version tracking
+- Idempotency for payment operations
+- Comprehensive audit logging
+- Clear separation of concerns (monolithic but well-layered)
+
+For detailed architecture decisions, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## License
 

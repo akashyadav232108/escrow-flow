@@ -207,7 +207,8 @@ public class ProjectService {
                 milestone.getTitle(),
                 milestone.getDescription(),
                 milestone.getAmount(),
-                milestone.getStatus());
+                milestone.getStatus(),
+                milestone.getSubmittedNote());
     }
 
     private ProjectUserSummary toUserSummary(User user) {

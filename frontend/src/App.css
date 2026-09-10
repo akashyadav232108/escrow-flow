@@ -612,16 +612,65 @@
 }
 
 .status-approved,
-.status-completed {
+.status-completed,
+.status-settled {
   background: var(--color-success-bg);
   color: var(--color-success);
 }
 
 .status-disputed,
 .status-refunded,
-.status-cancelled {
+.status-cancelled,
+.status-exit_disputed {
   background: var(--color-danger-bg);
   color: var(--color-danger);
+}
+
+.exit-settlement-list {
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.exit-admin-settlements {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.exit-admin-settlements > li {
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+}
+
+.exit-admin-settlement-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.exit-amount-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.exit-amount-label input {
+  max-width: 12rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font: inherit;
 }
 
 /* Create project form */
@@ -640,6 +689,12 @@
 .create-project-form h2 {
   margin: 0;
   font-size: 1.1rem;
+}
+
+.create-project-form .form-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
 }
 
 .create-project-form > label {
@@ -761,6 +816,165 @@
   box-shadow: var(--shadow-card);
 }
 
+.applications-section {
+  margin-bottom: 1.75rem;
+  padding: 1.25rem 1.5rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+}
+
+.applications-section h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+}
+
+.application-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.application-list-item,
+.application-mine {
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+}
+
+.application-list-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.application-applicant {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.application-message {
+  margin: 0.55rem 0 0;
+  font-size: 0.9rem;
+}
+
+.application-meta {
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+}
+
+.application-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.application-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.application-form > label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.application-form textarea {
+  width: 100%;
+  resize: vertical;
+  font: inherit;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-alt);
+}
+
+.application-form > .btn-primary,
+.application-mine > .btn-secondary {
+  align-self: flex-start;
+  margin-top: 0.25rem;
+}
+
+.applications-section .status-badge.status-pending {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.applications-section .status-badge.status-accepted {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.applications-section .status-badge.status-declined,
+.applications-section .status-badge.status-withdrawn {
+  background: var(--color-neutral-bg);
+  color: var(--color-neutral-text);
+}
+
+.hire-agreement-panel {
+  margin-top: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.agreement-terms {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  max-height: 14rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.agreement-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.agreement-checkbox input {
+  margin-top: 0.2rem;
+}
+
+.agreement-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.agreement-toggle {
+  margin-left: auto;
+}
+
+.agreement-gate-note {
+  margin: 0 0 1rem;
+}
+
 .review-section h2 {
   margin: 0 0 0.35rem;
   font-size: 1.05rem;
@@ -874,11 +1088,37 @@
   box-shadow: var(--shadow-card);
 }
 
+.milestone-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
 .milestone-info {
   display: flex;
   align-items: center;
   gap: 0.85rem;
   padding-top: 0.35rem;
+}
+
+.milestone-submitted-note {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.milestone-submitted-label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.milestone-submitted-note p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 .milestone-actions {

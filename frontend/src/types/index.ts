@@ -22,6 +22,12 @@ export interface Wallet {
   updatedAt: string;
 }
 
+export interface AddFundsResponse {
+  wallet: Wallet;
+  transactionId: number;
+  createdAt: string;
+}
+
 export type TransactionType = 'CREDIT' | 'DEBIT';
 
 export interface Transaction {
@@ -47,7 +53,8 @@ export type MilestoneStatus =
   | 'SUBMITTED'
   | 'APPROVED'
   | 'DISPUTED'
-  | 'REFUNDED';
+  | 'REFUNDED'
+  | 'SETTLED';
 
 export interface Milestone {
   id: number;
@@ -55,9 +62,10 @@ export interface Milestone {
   description?: string;
   amount: number;
   status: MilestoneStatus;
+  submittedNote?: string | null;
 }
 
-export type ProjectStatus = 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+export type ProjectStatus = 'OPEN' | 'IN_PROGRESS' | 'EXIT_DISPUTED' | 'COMPLETED' | 'CANCELLED';
 
 export interface ProjectPerson {
   id: number;
@@ -173,9 +181,14 @@ export type NotificationType =
   | 'WORK_SUBMITTED'
   | 'DISPUTE_RAISED'
   | 'DISPUTE_RESOLVED'
-  | 'REVIEW_RECEIVED';
+  | 'REVIEW_RECEIVED'
+  | 'APPLICATION_RECEIVED'
+  | 'APPLICATION_ACCEPTED'
+  | 'APPLICATION_DECLINED'
+  | 'PROJECT_EXIT_RAISED'
+  | 'PROJECT_EXIT_RESOLVED';
 
-export type NotificationReferenceType = 'PROJECT' | 'MILESTONE' | 'DISPUTE';
+export type NotificationReferenceType = 'PROJECT' | 'MILESTONE' | 'DISPUTE' | 'PROJECT_EXIT';
 
 export interface NotificationItem {
   id: number;
@@ -227,5 +240,77 @@ export interface RatingSummary {
 export interface CreateReviewInput {
   rating: number;
   comment?: string;
+}
+
+export type ApplicationStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'WITHDRAWN';
+
+export interface ProjectApplication {
+  id: number;
+  projectId: number;
+  projectTitle: string;
+  freelancerId: number;
+  freelancerName: string;
+  status: ApplicationStatus;
+  message: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApplyToProjectInput {
+  message?: string;
+}
+
+export interface ProjectAgreement {
+  id: number;
+  projectId: number;
+  termsVersion: string;
+  termsText: string;
+  clientAcceptedAt: string | null;
+  freelancerAcceptedAt: string | null;
+  clientAccepted: boolean;
+  freelancerAccepted: boolean;
+  fullyAccepted: boolean;
+  createdAt: string;
+}
+
+export type ProjectExitStatus = 'OPEN' | 'RESOLVED';
+export type ProjectExitOutcome = 'CANCELLED' | 'REOPEN';
+
+export interface ProjectExitSettlement {
+  id: number;
+  milestoneId: number;
+  milestoneTitle: string;
+  milestoneStatus: MilestoneStatus;
+  holdAmount: number;
+  freelancerAmount: number | null;
+  clientRefundAmount: number | null;
+}
+
+export interface ProjectExitDetail {
+  id: number;
+  projectId: number;
+  projectTitle: string;
+  projectStatus: ProjectStatus;
+  clientId: number;
+  clientName: string;
+  freelancerId: number | null;
+  freelancerName: string | null;
+  raisedById: number;
+  raisedByName: string;
+  reason: string;
+  status: ProjectExitStatus;
+  projectOutcome: ProjectExitOutcome | null;
+  adminNote: string | null;
+  resolvedByAdminId: number | null;
+  resolvedByAdminName: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
+  settlements: ProjectExitSettlement[];
+}
+
+export interface ResolveProjectExitInput {
+  projectOutcome: ProjectExitOutcome;
+  adminNote?: string;
+  settlements: { milestoneId: number; freelancerAmount: number }[];
 }
 

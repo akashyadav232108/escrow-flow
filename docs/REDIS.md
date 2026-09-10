@@ -1,6 +1,6 @@
 # Redis design
 
-Redis is used for **correctness and safety**, not performance caching. Three concrete use cases — each justified in an interview.
+Redis is used for **correctness and safety**, not performance caching. Three concrete use cases with clear technical justification.
 
 ## Overview
 
@@ -143,7 +143,7 @@ Reject if count > limit (e.g. 5 per day) with HTTP `429 Too Many Requests`.
 | Cache wallet balance | Balance must come from DB after mutations |
 | Session store | JWT is stateless for v1; optional JWT blacklist on logout only |
 
-Padding the design with generic caching dilutes the correctness story in interviews.
+Padding the design with generic caching dilutes the focus on correctness and concurrency safety.
 
 ---
 
