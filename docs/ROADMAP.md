@@ -112,7 +112,7 @@
 - [ ] End-to-end smoke test on live URL
 - [ ] Root README quick-start verified
 
-**Exit criteria**: Shareable URL; interviewer can signup and run through escrow flow.
+**Exit criteria**: Shareable URL; users can signup and run through the complete escrow flow.
 
 ---
 
