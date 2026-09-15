@@ -1,8 +1,7 @@
 spring:
   application:
     name: escrow-flow
-  profiles:
-    active: local
+
   jpa:
     hibernate:
       ddl-auto: validate
@@ -15,11 +14,11 @@ spring:
     locations: classpath:db/migration
 
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 app:
   jwt:
-    secret: change-me-use-a-long-random-secret-at-least-32-characters
+    secret: ${JWT_SECRET}
     expiration-ms: 604800000  # 7 days for dev convenience (was 24h)
   wallet:
     starting-balance: 10000
