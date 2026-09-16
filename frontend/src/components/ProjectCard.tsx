@@ -3,7 +3,7 @@ import FreelancerRating from './FreelancerRating';
 import type { Project } from '../types';
 
 export default function ProjectCard({ project }: { project: Project }) {
-  const milestoneCount = project.milestones?.length ?? 0;
+  const milestoneCount = project.milestoneCount ?? project.milestones?.length ?? 0;
 
   return (
     <Link to={`/projects/${project.id}`} className="project-card">

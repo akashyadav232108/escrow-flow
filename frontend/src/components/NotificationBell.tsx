@@ -31,7 +31,13 @@ function pathForNotification(
 export default function NotificationBell() {
   const navigate = useNavigate();
   const user = useAppSelector((state) => state.auth.user);
-  const admin = isAdminRole(user?.role);
+
+  // Early return if no authenticated user (safety guard)
+  if (!user) {
+    return null;
+  }
+
+  const admin = isAdminRole(user.role);
   const [open, setOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [items, setItems] = useState<NotificationItem[]>([]);

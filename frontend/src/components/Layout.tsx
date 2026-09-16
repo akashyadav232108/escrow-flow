@@ -44,7 +44,7 @@ export default function Layout() {
           Escrow Flow
         </div>
         <div className="mobile-topbar-actions">
-          {isMobile && <NotificationBell />}
+          {user && isMobile && <NotificationBell />}
           <button
             type="button"
             className="hamburger-btn"
@@ -67,7 +67,7 @@ export default function Layout() {
             <span className="auth-brand-mark">E</span>
             Escrow Flow
           </div>
-          {!isMobile && (
+          {user && !isMobile && (
             <div className="sidebar-bell-desktop">
               <NotificationBell />
             </div>
@@ -99,25 +99,46 @@ export default function Layout() {
               <NavLink to="/" end className={navLinkClass} onClick={closeNav}>
                 Dashboard
               </NavLink>
-              <NavLink to="/wallet" className={navLinkClass} onClick={closeNav}>
-                Wallet
+              {user && (
+                <NavLink to="/wallet" className={navLinkClass} onClick={closeNav}>
+                  Wallet
+                </NavLink>
+              )}
+              <NavLink to="/about" className={navLinkClass} onClick={closeNav}>
+                About Us
               </NavLink>
             </>
           )}
         </nav>
         <div className="sidebar-footer">
-          {user && (
-            <Link to="/profile" className="sidebar-user" onClick={closeNav}>
-              <span className="sidebar-user-avatar">{initial}</span>
-              <div>
-                <div className="sidebar-user-name">{user.name}</div>
-                <div className="sidebar-user-role">{user.role.toLowerCase()}</div>
-              </div>
-            </Link>
+          {user ? (
+            <>
+              <Link to="/profile" className="sidebar-user" onClick={closeNav}>
+                <span className="sidebar-user-avatar">{initial}</span>
+                <div>
+                  <div className="sidebar-user-name">{user.name}</div>
+                  <div className="sidebar-user-role">{user.role.toLowerCase()}</div>
+                </div>
+              </Link>
+              <button type="button" className="sidebar-logout" onClick={handleLogout}>
+                Logout
+              </button>
+            </>
+          ) : (
+            <div className="sidebar-guest-actions">
+              <Link
+                to="/login"
+                className="btn-secondary"
+                style={{ marginBottom: '0.5rem', textAlign: 'center' }}
+                onClick={closeNav}
+              >
+                Log In
+              </Link>
+              <Link to="/signup" className="btn-primary" style={{ textAlign: 'center' }} onClick={closeNav}>
+                Sign Up
+              </Link>
+            </div>
           )}
-          <button type="button" className="sidebar-logout" onClick={handleLogout}>
-            Logout
-          </button>
         </div>
       </aside>
       <div className="app-main">

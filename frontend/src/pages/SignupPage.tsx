@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import BackButton from '../components/BackButton';
 import PasswordInput from '../components/PasswordInput';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
@@ -7,9 +7,17 @@ import { signup } from '../store/slices/authSlice';
 import type { Role } from '../types';
 import { extractApiErrorMessage } from '../utils/errors';
 
+interface LocationState {
+  from?: { pathname: string };
+  action?: string;
+  message?: string;
+}
+
 export default function SignupPage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
+  const locationState = location.state as LocationState | undefined;
   const loading = useAppSelector((state) => state.auth.loading);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -17,16 +25,27 @@ export default function SignupPage() {
   const [role, setRole] = useState<Role>('CLIENT');
   const [error, setError] = useState<string | null>(null);
 
+  const redirectPath = locationState?.from?.pathname || '/';
+  const actionMessage = locationState?.message;
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setError(null);
     try {
       await dispatch(signup({ name, email, password, role })).unwrap();
-      navigate('/', { replace: true });
+      navigate(redirectPath, { replace: true });
     } catch (err) {
       setError(extractApiErrorMessage(err, 'Signup failed'));
     }
   };
+
+  const handleGoBack = () => {
+    // Use browser back navigation for better UX
+    navigate(-1);
+  };
+
+  // Only show continue browsing if user came from a protected action
+  const showContinueBrowsing = locationState?.from && locationState?.action;
 
   return (
     <div className="auth-page">
@@ -37,7 +56,9 @@ export default function SignupPage() {
       </div>
       <div className="auth-card">
         <h1>Create your account</h1>
-        <p className="auth-subtitle">Milestone-based escrow for freelance work, done right.</p>
+        <p className="auth-subtitle">
+          {actionMessage || 'Milestone-based escrow for freelance work, done right.'}
+        </p>
         <form className="auth-form" onSubmit={handleSubmit}>
           <label>
             Name
@@ -77,8 +98,21 @@ export default function SignupPage() {
             {loading ? 'Creating account…' : 'Sign up'}
           </button>
         </form>
+        {showContinueBrowsing && (
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={handleGoBack}
+            style={{ width: '100%', marginTop: '0.5rem' }}
+          >
+            Continue Browsing
+          </button>
+        )}
         <p className="auth-footer">
-          Already have an account? <Link to="/login">Log in</Link>
+          Already have an account?{' '}
+          <Link to="/login" state={locationState}>
+            Log in
+          </Link>
         </p>
       </div>
     </div>

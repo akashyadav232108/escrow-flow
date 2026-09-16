@@ -115,11 +115,33 @@ public class ProjectService {
     }
 
     @Transactional(readOnly = true)
+    public List<ProjectSummaryResponse> listPublicProjects() {
+        // Return only OPEN projects for guest/unauthenticated users
+        List<Project> openProjects = projectRepository.findOpenProjectsForGuest();
+        log.info("Listing {} OPEN projects for guest user", openProjects.size());
+        return openProjects.stream().map(this::toSummaryResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
     public ProjectDetailResponse getById(Long projectId) {
         UserPrincipal principal = SecurityUtils.getCurrentUser();
         Project project = projectRepository.findByIdWithDetails(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
         requireCanView(project, principal);
+        return toDetailResponse(project);
+    }
+
+    @Transactional(readOnly = true)
+    public ProjectDetailResponse getByIdForGuest(Long projectId) {
+        Project project = projectRepository.findByIdWithDetails(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+        
+        // Guests can only view OPEN projects
+        if (project.getStatus() != ProjectStatus.OPEN) {
+            throw new ForbiddenException("This project is not publicly available");
+        }
+        
+        log.info("Guest viewing project: projectId={}", projectId);
         return toDetailResponse(project);
     }
 
@@ -183,6 +205,7 @@ public class ProjectService {
                 project.getStatus(),
                 toUserSummary(project.getClient()),
                 project.getFreelancer() != null ? toUserSummary(project.getFreelancer()) : null,
+                project.getMilestones().size(),
                 project.getCreatedAt());
     }
 

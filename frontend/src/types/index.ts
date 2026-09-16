@@ -79,6 +79,7 @@ export interface Project {
   status: ProjectStatus;
   client?: ProjectPerson;
   freelancer?: ProjectPerson | null;
+  milestoneCount?: number;
   milestones?: Milestone[];
 }
 

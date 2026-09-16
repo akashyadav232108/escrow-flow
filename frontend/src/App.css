@@ -1784,3 +1784,142 @@
   }
 }
 
+/* Guest User Styles */
+.guest-banner {
+  background: linear-gradient(135deg, var(--color-primary-soft) 0%, var(--color-surface) 100%);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1.5rem 2rem;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow-card);
+}
+
+.guest-banner h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  color: var(--color-text);
+}
+
+.guest-banner p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.guest-banner a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.guest-banner a:hover {
+  text-decoration: underline;
+}
+
+.sidebar-guest-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar-guest-actions a {
+  text-decoration: none;
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: block;
+}
+
+/* About Page Styles */
+.about-page {
+  max-width: 800px;
+}
+
+.about-page h1 {
+  font-size: 2.25rem;
+  margin: 0 0 2rem 0;
+  color: var(--color-text);
+}
+
+.about-section {
+  margin-bottom: 2.5rem;
+}
+
+.about-section h2 {
+  font-size: 1.5rem;
+  margin: 0 0 1rem 0;
+  color: var(--color-text);
+}
+
+.about-section p {
+  color: var(--color-text-muted);
+  line-height: 1.7;
+  margin: 0 0 1rem 0;
+}
+
+.about-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.about-step {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-card);
+}
+
+.about-step h3 {
+  font-size: 1.1rem;
+  margin: 0 0 0.5rem 0;
+  color: var(--color-primary);
+}
+
+.about-step p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.about-features {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+}
+
+.about-features li {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.about-features li:last-child {
+  border-bottom: none;
+}
+
+.about-features strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .guest-banner {
+    padding: 1.25rem 1.5rem;
+  }
+
+  .guest-banner h2 {
+    font-size: 1.25rem;
+  }
+
+  .about-steps {
+    grid-template-columns: 1fr;
+  }
+}
+

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import CreateProjectForm from '../components/CreateProjectForm';
 import ProjectCard from '../components/ProjectCard';
+import { useProtectedAction } from '../hooks/useProtectedAction';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchProjects } from '../store/slices/projectsSlice';
 import { clearProjectDraft, hasProjectDraft } from '../utils/projectDraft';
@@ -11,13 +12,15 @@ export default function DashboardPage() {
   const dispatch = useAppDispatch();
   const { projects, loading, error } = useAppSelector((state) => state.projects);
   const user = useAppSelector((state) => state.auth.user);
+  const { wrapAction, isAuthenticated } = useProtectedAction();
   const [showCreateForm, setShowCreateForm] = useState(false);
 
   useEffect(() => {
-    if (!isAdminRole(user?.role)) {
+    // Fetch projects for both guests and authenticated users (except admins)
+    if (!user || !isAdminRole(user.role)) {
       dispatch(fetchProjects(undefined));
     }
-  }, [dispatch, user?.role]);
+  }, [dispatch, user]);
 
   useEffect(() => {
     if (user?.id && hasProjectDraft(user.id)) {
@@ -25,42 +28,59 @@ export default function DashboardPage() {
     }
   }, [user?.id]);
 
-  if (isAdminRole(user?.role)) {
+  if (user && isAdminRole(user.role)) {
     return <Navigate to="/admin" replace />;
   }
 
   const isClient = user?.role === 'CLIENT' || user?.role === 'BOTH';
   const isFreelancer = user?.role === 'FREELANCER' || user?.role === 'BOTH';
 
-  const myProjects = projects.filter((project) => project.client?.id === user?.id);
-  const myAssignments = projects.filter((project) => project.freelancer?.id === user?.id);
+  const myProjects = user ? projects.filter((project) => project.client?.id === user.id) : [];
+  const myAssignments = user ? projects.filter((project) => project.freelancer?.id === user.id) : [];
   const openProjects = projects.filter(
-    (project) => project.status === 'OPEN' && project.freelancer?.id !== user?.id,
+    (project) => project.status === 'OPEN' && (!user || project.freelancer?.id !== user.id),
+  );
+
+  const handleCreateProjectClick = wrapAction(
+    () => {
+      if (showCreateForm) {
+        if (user?.id) clearProjectDraft(user.id);
+        setShowCreateForm(false);
+        return;
+      }
+      setShowCreateForm(true);
+    },
+    { action: 'create-project', message: 'Please sign up or log in to create a project' },
   );
 
   return (
     <div className="dashboard-page">
+      {!isAuthenticated && (
+        <div className="guest-banner">
+          <h2>Welcome to Escrow Flow</h2>
+          <p>
+            Browse available projects and see how secure escrow payments work. Ready to get started?{' '}
+            <Link to="/signup">Sign up</Link> to create projects or apply as a freelancer.
+          </p>
+        </div>
+      )}
+
       <div className="dashboard-header">
         <div>
           <h1>Dashboard</h1>
           <p className="dashboard-subtitle">
-            {isClient && !isFreelancer
-              ? "Manage the projects you've created."
-              : 'Find work and track your assignments.'}
+            {!isAuthenticated
+              ? 'Discover open projects and explore secure escrow payments.'
+              : isClient && !isFreelancer
+                ? "Manage the projects you've created."
+                : 'Find work and track your assignments.'}
           </p>
         </div>
         {isClient && (
           <button
             type="button"
             className={showCreateForm ? 'btn-secondary' : 'btn-primary'}
-            onClick={() => {
-              if (showCreateForm) {
-                if (user?.id) clearProjectDraft(user.id);
-                setShowCreateForm(false);
-                return;
-              }
-              setShowCreateForm(true);
-            }}
+            onClick={handleCreateProjectClick}
           >
             {showCreateForm ? 'Cancel' : '+ New project'}
           </button>
@@ -72,7 +92,7 @@ export default function DashboardPage() {
       {loading && <p>Loading projects…</p>}
       {error && <p className="error-text">{error}</p>}
 
-      {isClient && (
+      {isAuthenticated && isClient && (
         <section className="dashboard-section">
           <h2>My projects</h2>
           {!loading && myProjects.length === 0 ? (
@@ -87,35 +107,33 @@ export default function DashboardPage() {
         </section>
       )}
 
-      {isFreelancer && (
-        <>
-          <section className="dashboard-section">
-            <h2>My assignments</h2>
-            {!loading && myAssignments.length === 0 ? (
-              <p className="empty-state">No active assignments yet.</p>
-            ) : (
-              <div className="project-grid">
-                {myAssignments.map((project) => (
-                  <ProjectCard key={project.id} project={project} />
-                ))}
-              </div>
-            )}
-          </section>
-
-          <section className="dashboard-section">
-            <h2>Open projects</h2>
-            {!loading && openProjects.length === 0 ? (
-              <p className="empty-state">No open projects available right now.</p>
-            ) : (
-              <div className="project-grid">
-                {openProjects.map((project) => (
-                  <ProjectCard key={project.id} project={project} />
-                ))}
-              </div>
-            )}
-          </section>
-        </>
+      {isAuthenticated && isFreelancer && (
+        <section className="dashboard-section">
+          <h2>My assignments</h2>
+          {!loading && myAssignments.length === 0 ? (
+            <p className="empty-state">No active assignments yet.</p>
+          ) : (
+            <div className="project-grid">
+              {myAssignments.map((project) => (
+                <ProjectCard key={project.id} project={project} />
+              ))}
+            </div>
+          )}
+        </section>
       )}
+
+      <section className="dashboard-section">
+        <h2>{isAuthenticated && isFreelancer ? 'Open projects' : 'Browse Projects'}</h2>
+        {!loading && openProjects.length === 0 ? (
+          <p className="empty-state">No open projects available right now.</p>
+        ) : (
+          <div className="project-grid">
+            {openProjects.map((project) => (
+              <ProjectCard key={project.id} project={project} />
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

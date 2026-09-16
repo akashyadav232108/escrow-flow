@@ -7,16 +7,24 @@ import { login } from '../store/slices/authSlice';
 import { extractApiErrorMessage } from '../utils/errors';
 import { isAdminRole } from '../utils/roles';
 
+interface LocationState {
+  from?: { pathname: string };
+  action?: string;
+  message?: string;
+}
+
 export default function LoginPage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  const locationState = location.state as LocationState | undefined;
   const loading = useAppSelector((state) => state.auth.loading);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname ?? '/';
+  const from = locationState?.from?.pathname ?? '/';
+  const actionMessage = locationState?.message;
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -34,6 +42,14 @@ export default function LoginPage() {
     }
   };
 
+  const handleGoBack = () => {
+    // Use browser back navigation for better UX
+    navigate(-1);
+  };
+
+  // Only show continue browsing if user came from a protected action
+  const showContinueBrowsing = locationState?.from && locationState?.action;
+
   return (
     <div className="auth-page">
       <BackButton className="auth-back-button" />
@@ -43,7 +59,7 @@ export default function LoginPage() {
       </div>
       <div className="auth-card">
         <h1>Welcome back</h1>
-        <p className="auth-subtitle">Log in to manage your projects and wallet.</p>
+        <p className="auth-subtitle">{actionMessage || 'Log in to manage your projects and wallet.'}</p>
         <form className="auth-form" onSubmit={handleSubmit}>
           <label>
             Email
@@ -70,8 +86,21 @@ export default function LoginPage() {
             {loading ? 'Logging in…' : 'Log in'}
           </button>
         </form>
+        {showContinueBrowsing && (
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={handleGoBack}
+            style={{ width: '100%', marginTop: '0.5rem' }}
+          >
+            Continue Browsing
+          </button>
+        )}
         <p className="auth-footer">
-          No account? <Link to="/signup">Sign up</Link>
+          No account?{' '}
+          <Link to="/signup" state={locationState}>
+            Sign up
+          </Link>
         </p>
       </div>
     </div>
