@@ -10,6 +10,7 @@ public record ProjectSummaryResponse(
         ProjectStatus status,
         ProjectUserSummary client,
         ProjectUserSummary freelancer,
+        int milestoneCount,
         Instant createdAt
 ) {
 }

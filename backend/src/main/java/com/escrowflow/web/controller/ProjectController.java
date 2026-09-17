@@ -7,6 +7,9 @@ import com.escrowflow.web.dto.ProjectDetailResponse;
 import com.escrowflow.web.dto.ProjectSummaryResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,12 +39,34 @@ public class ProjectController {
 
     @GetMapping
     public List<ProjectSummaryResponse> list(@RequestParam(required = false) ProjectStatus status) {
-        return projectService.listForUser(status);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAnonymous = auth == null ||
+                !auth.isAuthenticated() ||
+                auth instanceof AnonymousAuthenticationToken;
+
+        if (isAnonymous) {
+            // Guest users: show only OPEN projects
+            return projectService.listPublicProjects();
+        } else {
+            // Authenticated users: show personalized projects
+            return projectService.listForUser(status);
+        }
     }
 
     @GetMapping("/{id}")
     public ProjectDetailResponse getById(@PathVariable Long id) {
-        return projectService.getById(id);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAnonymous = auth == null ||
+                !auth.isAuthenticated() ||
+                auth instanceof AnonymousAuthenticationToken;
+
+        if (isAnonymous) {
+            // Guest users: can only view OPEN projects
+            return projectService.getByIdForGuest(id);
+        } else {
+            // Authenticated users: can view their projects
+            return projectService.getById(id);
+        }
     }
 
     @PostMapping("/{id}/accept")

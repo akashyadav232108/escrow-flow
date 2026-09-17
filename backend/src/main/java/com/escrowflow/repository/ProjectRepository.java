@@ -50,4 +50,12 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     long countByClient_IdAndStatus(Long clientId, ProjectStatus status);
 
     long countByFreelancer_IdAndStatus(Long freelancerId, ProjectStatus status);
+
+    @Query("""
+            SELECT p FROM Project p
+            LEFT JOIN FETCH p.client
+            WHERE p.status = com.escrowflow.domain.enums.ProjectStatus.OPEN
+            ORDER BY p.createdAt DESC
+            """)
+    List<Project> findOpenProjectsForGuest();
 }

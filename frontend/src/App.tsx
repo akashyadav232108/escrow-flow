@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import RequireAdmin from './components/RequireAdmin';
 import RequireAuth from './components/RequireAuth';
+import AboutPage from './pages/AboutPage';
 import AdminAdminsPage from './pages/AdminAdminsPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminDisputeDetailPage from './pages/AdminDisputeDetailPage';
@@ -21,8 +22,18 @@ import './App.css';
 function App() {
   return (
     <Routes>
+      {/* Public routes - no authentication required */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
+
+      {/* Public routes with layout - guests can browse */}
+      <Route element={<Layout />}>
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/projects/:id" element={<ProjectDetailPage />} />
+        <Route path="/about" element={<AboutPage />} />
+      </Route>
+
+      {/* Protected routes - authentication required */}
       <Route
         element={
           <RequireAuth>
@@ -30,8 +41,6 @@ function App() {
           </RequireAuth>
         }
       >
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/projects/:id" element={<ProjectDetailPage />} />
         <Route path="/wallet" element={<WalletPage />} />
         <Route path="/profile" element={<ProfilePage />} />
 
