@@ -16,6 +16,7 @@ export default function ResetPasswordPage() {
   const [email] = useState(emailFromState);
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [resendLoading, setResendLoading] = useState(false);
@@ -41,6 +42,11 @@ export default function ResetPasswordPage() {
       return;
     }
 
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
     try {
       await dispatch(resetPassword({ email, otp, newPassword })).unwrap();
       navigate('/login', { 
@@ -61,6 +67,8 @@ export default function ResetPasswordPage() {
       await dispatch(resendOtp({ email })).unwrap();
       setSuccess('A new code has been sent to your email');
       setOtp('');
+      setNewPassword('');
+      setConfirmPassword('');
     } catch (err) {
       setError(extractApiErrorMessage(err, 'Failed to resend code'));
     } finally {
@@ -107,9 +115,24 @@ export default function ResetPasswordPage() {
               required
             />
           </label>
+          <label>
+            Confirm New Password
+            <PasswordInput
+              value={confirmPassword}
+              onChange={setConfirmPassword}
+              placeholder="Re-enter your password"
+              autoComplete="new-password"
+              minLength={8}
+              required
+            />
+          </label>
           {error && <p className="error-text">{error}</p>}
           {success && <p className="success-text">{success}</p>}
-          <button type="submit" className="btn-primary" disabled={loading || otp.length !== 6}>
+          <button 
+            type="submit" 
+            className="btn-primary" 
+            disabled={loading || otp.length !== 6 || !newPassword || !confirmPassword}
+          >
             {loading ? 'Resetting…' : 'Reset Password'}
           </button>
         </form>

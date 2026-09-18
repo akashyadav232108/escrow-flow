@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
@@ -57,7 +58,7 @@ public class OtpService {
         return otp;
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public boolean validateOtp(String email, String otp, OtpPurpose purpose) {
         Optional<OtpCode> otpCodeOpt = otpCodeRepository.findTopByEmailAndPurposeOrderByCreatedAtDesc(email, purpose);
 
