@@ -61,12 +61,45 @@ export default function LoginPage() {
 
   return (
     <div className="auth-page">
-      <BackButton className="auth-back-button" />
-      <div className="auth-brand">
-        <span className="auth-brand-mark">E</span>
-        Escrow Flow
+      {/* Info Panel - Desktop Only */}
+      <div className="auth-info-panel">
+        <div className="auth-info-content">
+          <h1>Welcome back to Escrow Flow</h1>
+          <p>Secure your freelance payments with milestone-based escrow protection</p>
+          <div className="auth-info-features">
+            <div className="auth-feature">
+              <div className="auth-feature-icon">🔒</div>
+              <div className="auth-feature-text">
+                <h3>Secure Payments</h3>
+                <p>Funds held safely in escrow until work is approved</p>
+              </div>
+            </div>
+            <div className="auth-feature">
+              <div className="auth-feature-icon">📊</div>
+              <div className="auth-feature-text">
+                <h3>Milestone Tracking</h3>
+                <p>Break projects into phases for better control</p>
+              </div>
+            </div>
+            <div className="auth-feature">
+              <div className="auth-feature-icon">⚖️</div>
+              <div className="auth-feature-text">
+                <h3>Dispute Resolution</h3>
+                <p>Fair process if disagreements arise</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="auth-card">
+
+      {/* Form Section */}
+      <div className="auth-form-section">
+        <BackButton className="auth-back-button" />
+        <div className="auth-brand">
+          <span className="auth-brand-mark">E</span>
+          Escrow Flow
+        </div>
+        <div className="auth-card">
         <h1>Welcome back</h1>
         <p className="auth-subtitle">{actionMessage || 'Log in to manage your projects and wallet.'}</p>
         <form className="auth-form" onSubmit={handleSubmit}>
@@ -133,6 +166,7 @@ export default function LoginPage() {
             Sign up
           </Link>
         </p>
+        </div>
       </div>
     </div>
   );

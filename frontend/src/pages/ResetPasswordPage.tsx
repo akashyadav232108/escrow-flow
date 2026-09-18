@@ -78,12 +78,45 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="auth-page">
-      <BackButton className="auth-back-button" />
-      <div className="auth-brand">
-        <span className="auth-brand-mark">E</span>
-        Escrow Flow
+      {/* Info Panel - Desktop Only */}
+      <div className="auth-info-panel">
+        <div className="auth-info-content">
+          <h1>Create a new password</h1>
+          <p>Choose a strong password to keep your account secure</p>
+          <div className="auth-info-features">
+            <div className="auth-feature">
+              <div className="auth-feature-icon">🔑</div>
+              <div className="auth-feature-text">
+                <h3>Strong Password</h3>
+                <p>Minimum 8 characters for security</p>
+              </div>
+            </div>
+            <div className="auth-feature">
+              <div className="auth-feature-icon">✅</div>
+              <div className="auth-feature-text">
+                <h3>Verify OTP</h3>
+                <p>Enter the code from your email</p>
+              </div>
+            </div>
+            <div className="auth-feature">
+              <div className="auth-feature-icon">🔄</div>
+              <div className="auth-feature-text">
+                <h3>Try Again</h3>
+                <p>Request new code if expired</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="auth-card">
+
+      {/* Form Section */}
+      <div className="auth-form-section">
+        <BackButton className="auth-back-button" />
+        <div className="auth-brand">
+          <span className="auth-brand-mark">E</span>
+          Escrow Flow
+        </div>
+        <div className="auth-card">
         <h1>Reset your password</h1>
         <p className="auth-subtitle">
           Enter the 6-digit code sent to <strong>{email}</strong> and choose a new password.
@@ -154,6 +187,7 @@ export default function ResetPasswordPage() {
           >
             {resendLoading ? 'Sending…' : 'Resend code'}
           </button>
+        </div>
         </div>
       </div>
     </div>

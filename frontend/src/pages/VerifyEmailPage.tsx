@@ -60,12 +60,45 @@ export default function VerifyEmailPage() {
 
   return (
     <div className="auth-page">
-      <BackButton className="auth-back-button" />
-      <div className="auth-brand">
-        <span className="auth-brand-mark">E</span>
-        Escrow Flow
+      {/* Info Panel - Desktop Only */}
+      <div className="auth-info-panel">
+        <div className="auth-info-content">
+          <h1>Almost there!</h1>
+          <p>Verify your email to unlock all features</p>
+          <div className="auth-info-features">
+            <div className="auth-feature">
+              <div className="auth-feature-icon">📧</div>
+              <div className="auth-feature-text">
+                <h3>Check Your Inbox</h3>
+                <p>We've sent a 6-digit code to your email</p>
+              </div>
+            </div>
+            <div className="auth-feature">
+              <div className="auth-feature-icon">⏱️</div>
+              <div className="auth-feature-text">
+                <h3>Valid for 10 Minutes</h3>
+                <p>Enter the code before it expires</p>
+              </div>
+            </div>
+            <div className="auth-feature">
+              <div className="auth-feature-icon">🔄</div>
+              <div className="auth-feature-text">
+                <h3>Didn't Get It?</h3>
+                <p>Request a new code anytime</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="auth-card">
+
+      {/* Form Section */}
+      <div className="auth-form-section">
+        <BackButton className="auth-back-button" />
+        <div className="auth-brand">
+          <span className="auth-brand-mark">E</span>
+          Escrow Flow
+        </div>
+        <div className="auth-card">
         <h1>Verify your email</h1>
         <p className="auth-subtitle">
           We've sent a 6-digit code to <strong>{email}</strong>. Enter it below to verify your account.
@@ -110,6 +143,7 @@ export default function VerifyEmailPage() {
           >
             {resendLoading ? 'Sending…' : 'Resend code'}
           </button>
+        </div>
         </div>
       </div>
     </div>

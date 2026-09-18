@@ -42,12 +42,45 @@ export default function SignupPage() {
 
   return (
     <div className="auth-page">
-      <BackButton className="auth-back-button" />
-      <div className="auth-brand">
-        <span className="auth-brand-mark">E</span>
-        Escrow Flow
+      {/* Info Panel - Desktop Only */}
+      <div className="auth-info-panel">
+        <div className="auth-info-content">
+          <h1>Start your journey with Escrow Flow</h1>
+          <p>Join thousands of clients and freelancers who trust us with their projects</p>
+          <div className="auth-info-features">
+            <div className="auth-feature">
+              <div className="auth-feature-icon">💼</div>
+              <div className="auth-feature-text">
+                <h3>For Clients</h3>
+                <p>Post projects, approve work, and pay with confidence</p>
+              </div>
+            </div>
+            <div className="auth-feature">
+              <div className="auth-feature-icon">💻</div>
+              <div className="auth-feature-text">
+                <h3>For Freelancers</h3>
+                <p>Apply to projects and get paid securely for your work</p>
+              </div>
+            </div>
+            <div className="auth-feature">
+              <div className="auth-feature-icon">✨</div>
+              <div className="auth-feature-text">
+                <h3>Free to Start</h3>
+                <p>Get $10,000 in your wallet to begin immediately</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="auth-card">
+
+      {/* Form Section */}
+      <div className="auth-form-section">
+        <BackButton className="auth-back-button" />
+        <div className="auth-brand">
+          <span className="auth-brand-mark">E</span>
+          Escrow Flow
+        </div>
+        <div className="auth-card">
         <h1>Create your account</h1>
         <p className="auth-subtitle">
           {actionMessage || 'Milestone-based escrow for freelance work, done right.'}
@@ -97,6 +130,7 @@ export default function SignupPage() {
             Log in
           </Link>
         </p>
+        </div>
       </div>
     </div>
   );

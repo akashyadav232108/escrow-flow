@@ -57,11 +57,14 @@ export default function DashboardPage() {
     <div className="dashboard-page">
       {!isAuthenticated && (
         <div className="guest-banner">
-          <h2>Welcome to Escrow Flow</h2>
+          <h2>Welcome to Escrow Flow 👋</h2>
           <p>
-            Browse available projects and see how secure escrow payments work. Ready to get started?{' '}
-            <Link to="/signup">Sign up</Link> to create projects or apply as a freelancer.
+            Discover secure milestone-based escrow payments for freelance projects. Browse open projects below, or join thousands of users who trust us with their work.
           </p>
+          <div className="guest-banner-actions">
+            <Link to="/signup">Get Started Free</Link>
+            <Link to="/about">Learn More</Link>
+          </div>
         </div>
       )}
 

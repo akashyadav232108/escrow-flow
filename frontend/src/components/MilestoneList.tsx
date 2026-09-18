@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import type { Milestone } from '../types';
-import MilestoneActions from './MilestoneActions';
+import MilestoneDetailModal from './MilestoneDetailModal';
 
 const STATUS_CLASS: Record<Milestone['status'], string> = {
   PENDING: 'status-pending',
@@ -19,22 +20,6 @@ interface MilestoneListProps {
   actionsDisabled?: boolean;
 }
 
-const urlPattern = /(https?:\/\/[^\s]+)/g;
-const singleUrlPattern = /^https?:\/\/[^\s]+$/;
-
-function renderSubmittedNote(note: string) {
-  return note.split(urlPattern).map((part, index) => {
-    if (singleUrlPattern.test(part)) {
-      return (
-        <a key={`${part}-${index}`} href={part} target="_blank" rel="noreferrer">
-          {part}
-        </a>
-      );
-    }
-    return <span key={index}>{part}</span>;
-  });
-}
-
 export default function MilestoneList({
   milestones,
   projectId,
@@ -42,33 +27,44 @@ export default function MilestoneList({
   isFreelancer,
   actionsDisabled = false,
 }: MilestoneListProps) {
+  const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(null);
+
   return (
-    <ul className="milestone-list">
-      {milestones.map((milestone) => (
-        <li key={milestone.id} className="milestone-row">
-          <div className="milestone-main">
-            <div className="milestone-info">
-              <span className="milestone-title">{milestone.title}</span>
-              <span className={`status-badge ${STATUS_CLASS[milestone.status]}`}>{milestone.status}</span>
-              <span className="milestone-amount">₹{milestone.amount}</span>
-            </div>
-            {milestone.submittedNote && (
-              <div className="milestone-submitted-note">
-                <span className="milestone-submitted-label">Submitted work</span>
-                <p>{renderSubmittedNote(milestone.submittedNote)}</p>
+    <>
+      <ul className="milestone-list">
+        {milestones.map((milestone) => (
+          <li 
+            key={milestone.id} 
+            className="milestone-row milestone-clickable"
+            onClick={() => setSelectedMilestone(milestone)}
+          >
+            <div className="milestone-main">
+              <div className="milestone-info">
+                <span className="milestone-title">{milestone.title}</span>
+                <span className={`status-badge ${STATUS_CLASS[milestone.status]}`}>{milestone.status}</span>
+                <span className="milestone-amount">₹{milestone.amount}</span>
               </div>
-            )}
-          </div>
-          {!actionsDisabled && (
-            <MilestoneActions
-              milestone={milestone}
-              projectId={projectId}
-              isClient={isClient}
-              isFreelancer={isFreelancer}
-            />
-          )}
-        </li>
-      ))}
-    </ul>
+              {milestone.description && (
+                <p className="milestone-description-preview">{milestone.description}</p>
+              )}
+            </div>
+            <div className="milestone-expand-hint">
+              <span>View Details →</span>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      {selectedMilestone && (
+        <MilestoneDetailModal
+          milestone={selectedMilestone}
+          projectId={projectId}
+          isClient={isClient}
+          isFreelancer={isFreelancer}
+          actionsDisabled={actionsDisabled}
+          onClose={() => setSelectedMilestone(null)}
+        />
+      )}
+    </>
   );
 }

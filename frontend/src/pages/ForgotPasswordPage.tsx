@@ -26,12 +26,45 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="auth-page">
-      <BackButton className="auth-back-button" />
-      <div className="auth-brand">
-        <span className="auth-brand-mark">E</span>
-        Escrow Flow
+      {/* Info Panel - Desktop Only */}
+      <div className="auth-info-panel">
+        <div className="auth-info-content">
+          <h1>Reset your password</h1>
+          <p>We'll send you a code to reset your password securely</p>
+          <div className="auth-info-features">
+            <div className="auth-feature">
+              <div className="auth-feature-icon">🔐</div>
+              <div className="auth-feature-text">
+                <h3>Secure Process</h3>
+                <p>Email-verified OTP code for password reset</p>
+              </div>
+            </div>
+            <div className="auth-feature">
+              <div className="auth-feature-icon">⚡</div>
+              <div className="auth-feature-text">
+                <h3>Quick Reset</h3>
+                <p>Get back to your account in minutes</p>
+              </div>
+            </div>
+            <div className="auth-feature">
+              <div className="auth-feature-icon">🛡️</div>
+              <div className="auth-feature-text">
+                <h3>Protected Account</h3>
+                <p>Your data stays safe throughout</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="auth-card">
+
+      {/* Form Section */}
+      <div className="auth-form-section">
+        <BackButton className="auth-back-button" />
+        <div className="auth-brand">
+          <span className="auth-brand-mark">E</span>
+          Escrow Flow
+        </div>
+        <div className="auth-card">
         <h1>Forgot password?</h1>
         <p className="auth-subtitle">
           No worries! Enter your email address and we'll send you a code to reset your password.
@@ -57,6 +90,7 @@ export default function ForgotPasswordPage() {
           Remember your password?{' '}
           <Link to="/login">Log in</Link>
         </p>
+        </div>
       </div>
     </div>
   );
