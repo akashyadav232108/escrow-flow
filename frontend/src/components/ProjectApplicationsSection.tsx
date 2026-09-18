@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { applicationApi } from '../api/applicationApi';
+import { useProtectedAction } from '../hooks/useProtectedAction';
 import type { ProjectApplication, ProjectStatus } from '../types';
 import { extractApiErrorMessage } from '../utils/errors';
 import FreelancerRating from './FreelancerRating';
@@ -34,6 +35,7 @@ export default function ProjectApplicationsSection({
   canApplyAsFreelancer,
   onHired,
 }: ProjectApplicationsSectionProps) {
+  const { wrapAction } = useProtectedAction();
   const openForHire = projectStatus === 'OPEN' && !hasFreelancer;
   const [applications, setApplications] = useState<ProjectApplication[]>([]);
   const [myApplication, setMyApplication] = useState<ProjectApplication | null>(null);
@@ -84,7 +86,7 @@ export default function ProjectApplicationsSection({
     return null;
   }
 
-  const handleApply = async (event: FormEvent) => {
+  const handleApplyInternal = async (event: FormEvent) => {
     event.preventDefault();
     setBusyId('apply');
     setError(null);
@@ -100,6 +102,11 @@ export default function ProjectApplicationsSection({
       setBusyId(null);
     }
   };
+
+  const handleApply = wrapAction(
+    handleApplyInternal,
+    { action: 'apply-project', message: 'Please sign up or log in to apply for this project' },
+  );
 
   const handleWithdraw = async (applicationId: number) => {
     setBusyId(applicationId);

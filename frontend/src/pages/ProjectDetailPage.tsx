@@ -35,7 +35,7 @@ export default function ProjectDetailPage() {
   const isFreelancer = user?.id === selectedProject.freelancer?.id;
   const canApplyAsFreelancer =
     !isClient &&
-    (user?.role === 'FREELANCER' || user?.role === 'BOTH');
+    (!user || user.role === 'FREELANCER' || user.role === 'BOTH');
 
   const refreshProject = () => {
     void dispatch(fetchProjectById(selectedProject.id));

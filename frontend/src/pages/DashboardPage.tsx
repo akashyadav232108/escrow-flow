@@ -76,7 +76,7 @@ export default function DashboardPage() {
                 : 'Find work and track your assignments.'}
           </p>
         </div>
-        {isClient && (
+        {(!isAuthenticated || isClient) && (
           <button
             type="button"
             className={showCreateForm ? 'btn-secondary' : 'btn-primary'}
