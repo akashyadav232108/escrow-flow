@@ -45,6 +45,27 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of(ex.getErrorCode(), ex.getMessage()));
     }
 
+    @ExceptionHandler(EmailNotVerifiedException.class)
+    public ResponseEntity<ErrorResponse> handleEmailNotVerified(EmailNotVerifiedException ex) {
+        log.warn("{}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.of("EMAIL_NOT_VERIFIED", "Please verify your email before logging in"));
+    }
+
+    @ExceptionHandler(InvalidOtpException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidOtp(InvalidOtpException ex) {
+        log.warn("{}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.of("INVALID_OTP", "Invalid or expired OTP code"));
+    }
+
+    @ExceptionHandler(OtpResendCooldownException.class)
+    public ResponseEntity<ErrorResponse> handleOtpResendCooldown(OtpResendCooldownException ex) {
+        log.warn("{}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(ErrorResponse.of("OTP_RESEND_COOLDOWN", "Please wait before requesting a new OTP"));
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex) {
         log.warn("Resource not found: {}", ex.getMessage());

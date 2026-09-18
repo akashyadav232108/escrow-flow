@@ -63,6 +63,12 @@ class ProjectIntegrationTest {
 
         var client = userRepository.findByEmail("client@example.com").orElseThrow();
         var freelancer = userRepository.findByEmail("freelancer@example.com").orElseThrow();
+        
+        // Verify emails for test
+        client.setEmailVerified(true);
+        freelancer.setEmailVerified(true);
+        userRepository.save(client);
+        userRepository.save(freelancer);
         var clientWallet = walletRepository.findByUser_Id(client.getId()).orElseThrow();
         var freelancerWallet = walletRepository.findByUser_Id(freelancer.getId()).orElseThrow();
         var clientBalanceBefore = clientWallet.getBalance();
@@ -106,6 +112,8 @@ class ProjectIntegrationTest {
     void accept_ownProject_isForbidden() {
         authService.signup(new SignupRequest("Solo User", "both@example.com", "password123", UserRole.BOTH));
         var user = userRepository.findByEmail("both@example.com").orElseThrow();
+        user.setEmailVerified(true);
+        userRepository.save(user);
 
         authenticate(user.getId(), user.getEmail(), UserRole.BOTH);
         var created = projectService.create(new CreateProjectRequest(

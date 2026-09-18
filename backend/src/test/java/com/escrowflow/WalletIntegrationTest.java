@@ -50,6 +50,8 @@ class WalletIntegrationTest {
                 UserRole.CLIENT));
 
         var user = userRepository.findByEmail("wallet-test@example.com").orElseThrow();
+        user.setEmailVerified(true);
+        userRepository.save(user);
         var wallet = walletRepository.findByUser_Id(user.getId()).orElseThrow();
 
         walletService.addFunds(user.getId(), new BigDecimal("2500.00"));

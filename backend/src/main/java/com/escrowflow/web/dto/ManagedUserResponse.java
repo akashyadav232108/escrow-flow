@@ -10,6 +10,7 @@ public record ManagedUserResponse(
         Long id,
         String name,
         String email,
+        Boolean emailVerified,
         UserRole role,
         AccountStatus accountStatus,
         Instant createdAt,

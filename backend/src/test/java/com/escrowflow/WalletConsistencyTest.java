@@ -72,6 +72,10 @@ class WalletConsistencyTest {
 
         client = userRepository.findByEmail("consistency-client@example.com").orElseThrow();
         freelancer = userRepository.findByEmail("consistency-freelancer@example.com").orElseThrow();
+        client.setEmailVerified(true);
+        freelancer.setEmailVerified(true);
+        userRepository.save(client);
+        userRepository.save(freelancer);
     }
 
     @AfterEach

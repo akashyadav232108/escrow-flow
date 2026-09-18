@@ -93,6 +93,10 @@ class EscrowIntegrationTest {
 
         var client = userRepository.findByEmail("client@test.com").orElseThrow();
         var freelancer = userRepository.findByEmail("freelancer@test.com").orElseThrow();
+        client.setEmailVerified(true);
+        freelancer.setEmailVerified(true);
+        userRepository.save(client);
+        userRepository.save(freelancer);
 
         authenticate(client.getId(), client.getEmail(), UserRole.CLIENT);
         var project = projectService.create(new CreateProjectRequest(
@@ -161,6 +165,10 @@ class EscrowIntegrationTest {
 
         var client = userRepository.findByEmail("client2@test.com").orElseThrow();
         var freelancer = userRepository.findByEmail("freelancer2@test.com").orElseThrow();
+        client.setEmailVerified(true);
+        freelancer.setEmailVerified(true);
+        userRepository.save(client);
+        userRepository.save(freelancer);
 
         authenticate(client.getId(), client.getEmail(), UserRole.CLIENT);
         var project = projectService.create(new CreateProjectRequest(
@@ -225,6 +233,10 @@ class EscrowIntegrationTest {
 
         var client = userRepository.findByEmail("ratelimit-client@test.com").orElseThrow();
         var freelancer = userRepository.findByEmail("ratelimit-freelancer@test.com").orElseThrow();
+        client.setEmailVerified(true);
+        freelancer.setEmailVerified(true);
+        userRepository.save(client);
+        userRepository.save(freelancer);
 
         authenticate(client.getId(), client.getEmail(), UserRole.CLIENT);
         var project = projectService.create(new CreateProjectRequest(
@@ -289,6 +301,8 @@ class EscrowIntegrationTest {
         authService.signup(new SignupRequest("Client3", "client3@test.com", "password123", UserRole.CLIENT));
 
         var client = userRepository.findByEmail("client3@test.com").orElseThrow();
+        client.setEmailVerified(true);
+        userRepository.save(client);
 
         authenticate(client.getId(), client.getEmail(), UserRole.CLIENT);
         var project = projectService.create(new CreateProjectRequest(
@@ -312,6 +326,8 @@ class EscrowIntegrationTest {
         authService.signup(new SignupRequest("PoorClient", "poor@test.com", "password123", UserRole.CLIENT));
 
         var client = userRepository.findByEmail("poor@test.com").orElseThrow();
+        client.setEmailVerified(true);
+        userRepository.save(client);
 
         authenticate(client.getId(), client.getEmail(), UserRole.CLIENT);
         var project = projectService.create(new CreateProjectRequest(
@@ -328,11 +344,15 @@ class EscrowIntegrationTest {
 
     @Test
     void parallelLockAttempts_onlyOneSucceeds() throws InterruptedException {
-        authService.signup(new SignupRequest("ConcurrentClient", "concurrent@test.com", "password123", UserRole.CLIENT));
+        authService.signup(new SignupRequest("ConcurrentClient", "concurrent@test.com", "password123", UserRole.CLIENT"));
         authService.signup(new SignupRequest("ConcurrentFreelancer", "confreelancer@test.com", "password123", UserRole.FREELANCER));
 
         var client = userRepository.findByEmail("concurrent@test.com").orElseThrow();
         var freelancer = userRepository.findByEmail("confreelancer@test.com").orElseThrow();
+        client.setEmailVerified(true);
+        freelancer.setEmailVerified(true);
+        userRepository.save(client);
+        userRepository.save(freelancer);
 
         authenticate(client.getId(), client.getEmail(), UserRole.CLIENT);
         var project = projectService.create(new CreateProjectRequest(

@@ -5,7 +5,9 @@ import com.escrowflow.service.AuthService;
 import com.escrowflow.web.dto.AuthResponse;
 import com.escrowflow.web.dto.ChangePasswordRequest;
 import com.escrowflow.web.dto.LoginRequest;
+import com.escrowflow.web.dto.ResendOtpRequest;
 import com.escrowflow.web.dto.SignupRequest;
+import com.escrowflow.web.dto.VerifyEmailRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,8 +28,19 @@ public class AuthController {
 
     @PostMapping("/signup")
     @ResponseStatus(HttpStatus.CREATED)
-    public AuthResponse signup(@Valid @RequestBody SignupRequest request) {
-        return authService.signup(request);
+    public void signup(@Valid @RequestBody SignupRequest request) {
+        authService.signup(request);
+    }
+
+    @PostMapping("/verify-email")
+    public AuthResponse verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
+        return authService.verifyEmail(request.email(), request.otp());
+    }
+
+    @PostMapping("/resend-otp")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resendOtp(@Valid @RequestBody ResendOtpRequest request) {
+        authService.resendOtp(request.email());
     }
 
     @PostMapping("/login")

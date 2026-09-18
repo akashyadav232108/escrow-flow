@@ -47,7 +47,8 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
                         // Public auth endpoints
-                        .requestMatchers(HttpMethod.POST, "/api/auth/signup", "/api/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/signup", "/api/auth/login", 
+                                "/api/auth/verify-email", "/api/auth/resend-otp").permitAll()
                         .requestMatchers("/error").permitAll()
                         // Guest browsing - allow viewing projects without authentication
                         .requestMatchers(HttpMethod.GET, "/api/projects").permitAll()

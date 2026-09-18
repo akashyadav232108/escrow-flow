@@ -333,6 +333,7 @@ public class AdminService {
                 user.getId(),
                 user.getName(),
                 user.getEmail(),
+                user.getEmailVerified(),
                 user.getRole(),
                 user.getAccountStatus(),
                 user.getCreatedAt(),
