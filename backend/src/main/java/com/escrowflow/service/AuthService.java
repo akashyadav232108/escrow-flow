@@ -43,6 +43,7 @@ public class AuthService {
     private final AppProperties appProperties;
     private final OtpService otpService;
     private final EmailService emailService;
+    private final RateLimitService rateLimitService;
 
     public AuthService(
             UserRepository userRepository,
@@ -52,7 +53,8 @@ public class AuthService {
             JwtService jwtService,
             AppProperties appProperties,
             OtpService otpService,
-            EmailService emailService) {
+            EmailService emailService,
+            RateLimitService rateLimitService) {
         this.userRepository = userRepository;
         this.walletRepository = walletRepository;
         this.walletTransactionRepository = walletTransactionRepository;
@@ -61,10 +63,14 @@ public class AuthService {
         this.appProperties = appProperties;
         this.otpService = otpService;
         this.emailService = emailService;
+        this.rateLimitService = rateLimitService;
     }
 
     @Transactional
     public void signup(SignupRequest request) {
+        // Rate limit by email
+        rateLimitService.checkSignupRateLimit(request.email());
+
         if (request.role().isAdminRole()) {
             throw new IllegalArgumentException(
                     "Cannot self-register as ADMIN or SUPER_ADMIN. Use marketplace roles only.");
@@ -104,6 +110,9 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
+        // Rate limit by email
+        rateLimitService.checkLoginRateLimit(request.email());
+
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(InvalidCredentialsException::new);
 
@@ -124,11 +133,17 @@ public class AuthService {
                     "ACCOUNT_DELETED", "This account has been removed.");
         }
 
+        // Reset rate limit on successful login
+        rateLimitService.recordSuccessfulLogin(request.email());
+
         return buildAuthResponse(user);
     }
 
     @Transactional
     public AuthResponse verifyEmail(String email, String otp) {
+        // Rate limit OTP verification attempts
+        rateLimitService.checkVerifyOtpRateLimit(email);
+
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
@@ -154,6 +169,9 @@ public class AuthService {
 
     @Transactional
     public void resendOtp(String email) {
+        // Rate limit OTP resend requests
+        rateLimitService.checkSendOtpRateLimit(email);
+
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 

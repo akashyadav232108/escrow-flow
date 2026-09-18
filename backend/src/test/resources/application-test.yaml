@@ -12,10 +12,10 @@ spring:
         dialect: org.hibernate.dialect.H2Dialect
   flyway:
     enabled: false
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
-      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+  data:
+    redis:
+      host: localhost
+      port: 6379
 
 app:
   jwt:
@@ -23,3 +23,15 @@ app:
     expiration-ms: 3600000
   wallet:
     starting-balance: 10000
+  email:
+    from: test@escrowflow.local
+    from-name: Escrow Flow Test
+  otp:
+    length: 6
+    ttl-minutes: 10
+    resend-cooldown-seconds: 60
+    max-attempts: 5
+  rate-limit:
+    login-per-minute: 100
+    signup-per-minute: 100
+    send-otp-per-minute: 100

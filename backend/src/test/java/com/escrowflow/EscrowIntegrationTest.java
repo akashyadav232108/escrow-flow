@@ -344,7 +344,7 @@ class EscrowIntegrationTest {
 
     @Test
     void parallelLockAttempts_onlyOneSucceeds() throws InterruptedException {
-        authService.signup(new SignupRequest("ConcurrentClient", "concurrent@test.com", "password123", UserRole.CLIENT"));
+        authService.signup(new SignupRequest("ConcurrentClient", "concurrent@test.com", "password123", UserRole.CLIENT));
         authService.signup(new SignupRequest("ConcurrentFreelancer", "confreelancer@test.com", "password123", UserRole.FREELANCER));
 
         var client = userRepository.findByEmail("concurrent@test.com").orElseThrow();
