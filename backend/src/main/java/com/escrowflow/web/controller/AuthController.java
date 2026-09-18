@@ -4,8 +4,10 @@ import com.escrowflow.security.SecurityUtils;
 import com.escrowflow.service.AuthService;
 import com.escrowflow.web.dto.AuthResponse;
 import com.escrowflow.web.dto.ChangePasswordRequest;
+import com.escrowflow.web.dto.ForgotPasswordRequest;
 import com.escrowflow.web.dto.LoginRequest;
 import com.escrowflow.web.dto.ResendOtpRequest;
+import com.escrowflow.web.dto.ResetPasswordRequest;
 import com.escrowflow.web.dto.SignupRequest;
 import com.escrowflow.web.dto.VerifyEmailRequest;
 import jakarta.validation.Valid;
@@ -46,6 +48,18 @@ public class AuthController {
     @PostMapping("/login")
     public AuthResponse login(@Valid @RequestBody LoginRequest request) {
         return authService.login(request);
+    }
+
+    @PostMapping("/forgot-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request.email());
+    }
+
+    @PostMapping("/reset-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request.email(), request.otp(), request.newPassword());
     }
 
     @PostMapping("/change-password")

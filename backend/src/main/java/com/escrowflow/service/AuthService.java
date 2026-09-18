@@ -190,6 +190,59 @@ public class AuthService {
     }
 
     @Transactional
+    public void forgotPassword(String email) {
+        // Rate limit forgot password requests
+        rateLimitService.checkSendOtpRateLimit(email);
+
+        // Don't reveal if user exists or not - always return success
+        var userOpt = userRepository.findByEmail(email);
+        if (userOpt.isEmpty()) {
+            log.info("Forgot password requested for non-existent email: {}", email);
+            return;
+        }
+
+        User user = userOpt.get();
+        
+        // Only send OTP if email is verified
+        if (!user.getEmailVerified()) {
+            log.warn("Forgot password requested for unverified email: {}", email);
+            return;
+        }
+
+        if (!otpService.canResendOtp(email, OtpPurpose.PASSWORD_RESET)) {
+            throw new OtpResendCooldownException("Please wait before requesting a new reset code");
+        }
+
+        String otp = otpService.generateAndSaveOtp(email, OtpPurpose.PASSWORD_RESET);
+        emailService.sendOtpEmail(email, otp, "PASSWORD_RESET");
+
+        log.info("Password reset OTP sent: email={}", email);
+    }
+
+    @Transactional
+    public void resetPassword(String email, String otp, String newPassword) {
+        // Rate limit reset password attempts
+        rateLimitService.checkVerifyOtpRateLimit(email);
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (!user.getEmailVerified()) {
+            throw new EmailNotVerifiedException("Email not verified");
+        }
+
+        boolean isValid = otpService.validateOtp(email, otp, OtpPurpose.PASSWORD_RESET);
+        if (!isValid) {
+            throw new InvalidOtpException("Invalid or expired reset code");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        log.info("Password reset successfully: email={}", email);
+    }
+
+    @Transactional
     public void changePassword(Long userId, ChangePasswordRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
