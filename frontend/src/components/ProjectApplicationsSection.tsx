@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type SyntheticEvent } from 'react';
 import { applicationApi } from '../api/applicationApi';
 import { useProtectedAction } from '../hooks/useProtectedAction';
+import { useAppSelector } from '../store/hooks';
 import type { ProjectApplication, ProjectStatus } from '../types';
 import { extractApiErrorMessage } from '../utils/errors';
 import FreelancerRating from './FreelancerRating';
@@ -36,6 +37,7 @@ export default function ProjectApplicationsSection({
   onHired,
 }: ProjectApplicationsSectionProps) {
   const { wrapAction } = useProtectedAction();
+  const user = useAppSelector((state) => state.auth.user);
   const openForHire = projectStatus === 'OPEN' && !hasFreelancer;
   const [applications, setApplications] = useState<ProjectApplication[]>([]);
   const [myApplication, setMyApplication] = useState<ProjectApplication | null>(null);
@@ -65,7 +67,7 @@ export default function ProjectApplicationsSection({
       try {
         if (isClient) {
           await loadClientList();
-        } else if (canApplyAsFreelancer) {
+        } else if (canApplyAsFreelancer && user) {
           await loadMyApplication();
         }
       } catch (err) {
@@ -80,14 +82,14 @@ export default function ProjectApplicationsSection({
     return () => {
       cancelled = true;
     };
-  }, [isClient, canApplyAsFreelancer, loadClientList, loadMyApplication]);
+  }, [isClient, canApplyAsFreelancer, user, loadClientList, loadMyApplication]);
 
   if (!isClient && !canApplyAsFreelancer) {
     return null;
   }
 
-  const handleApplyInternal = async (event: FormEvent) => {
-    event.preventDefault();
+  const handleApplyInternal = async (event?: SyntheticEvent) => {
+    event?.preventDefault();
     setBusyId('apply');
     setError(null);
     try {
@@ -286,7 +288,7 @@ export default function ProjectApplicationsSection({
       )}
 
       {!loading && !myApplication && openForHire && (
-        <form className="application-form" onSubmit={(e) => void handleApply(e)}>
+        <div className="application-form">
           <p className="muted-text">Apply to work on this project. The client will choose an applicant.</p>
           <label>
             Message (optional)
@@ -298,10 +300,18 @@ export default function ProjectApplicationsSection({
               placeholder="Brief note about your fit for this work"
             />
           </label>
-          <button type="submit" className="btn-primary" disabled={busyId === 'apply'}>
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={busyId === 'apply'}
+            onClick={(e) => {
+              e.preventDefault();
+              void handleApply(e);
+            }}
+          >
             {busyId === 'apply' ? 'Applying…' : 'Apply to project'}
           </button>
-        </form>
+        </div>
       )}
 
       {!loading && !myApplication && !openForHire && (

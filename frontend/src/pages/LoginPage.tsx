@@ -42,14 +42,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoBack = () => {
-    // Use browser back navigation for better UX
-    navigate(-1);
-  };
-
-  // Only show continue browsing if user came from a protected action
-  const showContinueBrowsing = locationState?.from && locationState?.action;
-
   return (
     <div className="auth-page">
       <BackButton className="auth-back-button" />
@@ -86,16 +78,6 @@ export default function LoginPage() {
             {loading ? 'Logging in…' : 'Log in'}
           </button>
         </form>
-        {showContinueBrowsing && (
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={handleGoBack}
-            style={{ width: '100%', marginTop: '0.5rem' }}
-          >
-            Continue Browsing
-          </button>
-        )}
         <p className="auth-footer">
           No account?{' '}
           <Link to="/signup" state={locationState}>
