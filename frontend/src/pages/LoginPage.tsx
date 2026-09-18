@@ -25,10 +25,16 @@ export default function LoginPage() {
 
   const from = locationState?.from?.pathname ?? '/';
   const actionMessage = locationState?.message;
+  const [successMessage, setSuccessMessage] = useState<string | null>(
+    actionMessage && !actionMessage.includes('sign up') && !actionMessage.includes('log in to') 
+      ? actionMessage 
+      : null
+  );
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setError(null);
+    setSuccessMessage(null);
     try {
       const result = await dispatch(login({ email, password })).unwrap();
       const dest = isAdminRole(result.user.role)
@@ -38,7 +44,18 @@ export default function LoginPage() {
         : from;
       navigate(dest, { replace: true });
     } catch (err) {
-      setError(extractApiErrorMessage(err, 'Login failed'));
+      const errorMessage = extractApiErrorMessage(err, 'Login failed');
+      
+      // Check if error is email not verified
+      if (errorMessage.includes('verify your email') || errorMessage.includes('EMAIL_NOT_VERIFIED')) {
+        setError('Please verify your email before logging in.');
+        // Store email for potential verification redirect
+        if (email) {
+          sessionStorage.setItem('unverified-email', email);
+        }
+      } else {
+        setError(errorMessage);
+      }
     }
   };
 
@@ -73,7 +90,39 @@ export default function LoginPage() {
               required
             />
           </label>
-          {error && <p className="error-text">{error}</p>}
+          <div style={{ textAlign: 'right', marginTop: '-0.5rem' }}>
+            <Link 
+              to="/forgot-password" 
+              style={{ 
+                fontSize: '0.85rem', 
+                color: 'var(--color-primary)', 
+                textDecoration: 'none' 
+              }}
+            >
+              Forgot password?
+            </Link>
+          </div>
+          {successMessage && <p className="success-text">{successMessage}</p>}
+          {error && (
+            <div>
+              <p className="error-text">{error}</p>
+              {error.includes('verify your email') && (
+                <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
+                  <Link
+                    to="/verify-email"
+                    state={{ email: email || sessionStorage.getItem('unverified-email') }}
+                    style={{
+                      fontSize: '0.85rem',
+                      color: 'var(--color-primary)',
+                      textDecoration: 'underline',
+                    }}
+                  >
+                    Go to verification page
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
           <button type="submit" className="btn-primary" disabled={loading}>
             {loading ? 'Logging in…' : 'Log in'}
           </button>

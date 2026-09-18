@@ -32,8 +32,9 @@ export default function SignupPage() {
     event.preventDefault();
     setError(null);
     try {
-      await dispatch(signup({ name, email, password, role })).unwrap();
-      navigate(redirectPath, { replace: true });
+      const signupEmail = await dispatch(signup({ name, email, password, role })).unwrap();
+      // Redirect to verify email page instead of logging in
+      navigate('/verify-email', { state: { email: signupEmail }, replace: true });
     } catch (err) {
       setError(extractApiErrorMessage(err, 'Signup failed'));
     }

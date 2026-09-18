@@ -6,6 +6,7 @@ export interface User {
   id: number;
   name: string;
   email: string;
+  emailVerified: boolean;
   role: Role;
   accountStatus?: AccountStatus;
   createdAt?: string;
