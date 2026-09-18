@@ -12,6 +12,14 @@ spring:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${SENDER_MAIL}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
 
 app:
   jwt:
@@ -19,3 +27,15 @@ app:
     expiration-ms: 86400000
   wallet:
     starting-balance: 10000
+  email:
+    from: ${SENDER_MAIL}
+    from-name: ${APP_NAME:Escrow Flow}
+  otp:
+    length: 6
+    ttl-minutes: 10
+    resend-cooldown-seconds: 60
+    max-attempts: 5
+  rate-limit:
+    login-per-minute: 10
+    signup-per-minute: 5
+    send-otp-per-minute: 3

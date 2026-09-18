@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Welcome to Escrow Flow</title>
+    <!--[if mso]>
+    <style type="text/css">
+        body, table, td {font-family: Arial, Helvetica, sans-serif !important;}
+    </style>
+    <![endif]-->
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: Arial, Helvetica, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f4f4f4;">
+        <tr>
+            <td style="padding: 20px 0;">
+                <!-- Main Container -->
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
+                            <h1 style="margin: 0 0 10px; color: #ffffff; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">
+                                Welcome to Escrow Flow! 🎉
+                            </h1>
+                        </td>
+                    </tr>
+                    
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px 30px; background-color: #f9f9f9;">
+                            <h2 style="margin: 0 0 15px; color: #333333; font-size: 22px; font-weight: 600;">
+                                Hi <span th:text="${userName}">User</span>,
+                            </h2>
+                            <p style="margin: 0 0 20px; color: #666666; font-size: 16px; line-height: 1.6;">
+                                Your email has been verified successfully! Welcome aboard.
+                            </p>
+                            <p style="margin: 0 0 30px; color: #666666; font-size: 16px; line-height: 1.6;">
+                                Escrow Flow provides secure milestone-based payments for freelance projects:
+                            </p>
+                            
+                            <!-- Features -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                <tr>
+                                    <td style="padding: 0 0 15px 0;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff; border-radius: 8px; padding: 20px;">
+                                            <tr>
+                                                <td>
+                                                    <div style="color: #667eea; font-size: 24px; margin-bottom: 8px;">✓</div>
+                                                    <div style="color: #333333; font-size: 16px; font-weight: 600; margin-bottom: 5px;">Secure Escrow</div>
+                                                    <div style="color: #666666; font-size: 14px; line-height: 1.5;">Funds held safely until work is approved</div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0 0 15px 0;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff; border-radius: 8px; padding: 20px;">
+                                            <tr>
+                                                <td>
+                                                    <div style="color: #667eea; font-size: 24px; margin-bottom: 8px;">✓</div>
+                                                    <div style="color: #333333; font-size: 16px; font-weight: 600; margin-bottom: 5px;">Milestone Tracking</div>
+                                                    <div style="color: #666666; font-size: 14px; line-height: 1.5;">Break projects into manageable phases</div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0 0 15px 0;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff; border-radius: 8px; padding: 20px;">
+                                            <tr>
+                                                <td>
+                                                    <div style="color: #667eea; font-size: 24px; margin-bottom: 8px;">✓</div>
+                                                    <div style="color: #333333; font-size: 16px; font-weight: 600; margin-bottom: 5px;">Dispute Resolution</div>
+                                                    <div style="color: #666666; font-size: 14px; line-height: 1.5;">Fair process if issues arise</div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <p style="margin: 20px 0 0; color: #666666; font-size: 16px; line-height: 1.6;">
+                                You're all set to start creating projects or applying as a freelancer!
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 30px; text-align: center; background-color: #ffffff; border-top: 1px solid #e0e0e0;">
+                            <p style="margin: 0 0 10px; color: #999999; font-size: 13px; line-height: 1.6;">
+                                Need help? Contact our support team anytime.
+                            </p>
+                            <p style="margin: 0; color: #999999; font-size: 13px; line-height: 1.6;">
+                                &copy; 2026 Escrow Flow. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
